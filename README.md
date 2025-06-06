@@ -6,6 +6,8 @@
 
 `syntaxviewer.html` is an app for visualizing syntactically annotated Greek texts. 
 
+There is a user's guide in [`guide.md`](./guide.md)
+
 ## Status
 
 Version 1.0.0 is an intitial release. Its main features are:
@@ -18,4 +20,9 @@ Version 1.0.0 is an intitial release. Its main features are:
 
 ## Caveats
 
-The web app was written entirely by gemini-2.5-pro. The code passes some sanity tests, but I have not even looked at the javascript. When I encountered errors, I let gemini fix them. Use the code as you like, but be aware that I have no idea what it does or how it works.
+The web app and the user's guide were both written entirely by gemini-2.5-pro. The code passes some sanity tests, but I have not even looked at the javascript. When I encountered errors, I let gemini fix them. Use the code as you like, but be aware that I have no idea what it does or how it works.
+
+
+### Auditing the build
+
+The file `chat.txt` has the complete chat session that was used to build this app.

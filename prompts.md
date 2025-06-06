@@ -85,3 +85,7 @@ Again lost the  menu to choose sentences! It's empty so we can't even start!
 
 Nice! Now I'd like to edit a couple of labels. 1) Please change the title of the page and the top level heading from "Greek Syntax Annotation Loader" to "Greek Syntax Viewer". 
 2) Please change the heading "Structured Layout" to "Text indented by level of subordination" 3) Please change the heading "Syntax Graph (Mermaid - Bottom to Top)" to "Syntax Graph".
+
+---
+
+Fantastic! Could you write a very brief user guide to using the app?

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greek Syntax Annotation Loader</title>
+    <title>Greek Syntax Viewer</title> <!-- Changed Title -->
     <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
@@ -145,7 +145,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Greek Syntax Annotation Loader</h1>
+        <h1>Greek Syntax Viewer</h1> <!-- Changed H1 -->
 
         <label for="fileInput">Choose a CEX file:</label>
         <input type="file" id="fileInput" accept=".cex">
@@ -180,12 +180,12 @@
         </div>
 
         <details id="structuredTextDetails" style="display: none;">
-            <summary><h3>Structured Layout</h3></summary>
+            <summary><h3>Text indented by level of subordination</h3></summary> <!-- Changed Summary -->
             <div id="structuredTextContent"></div>
         </details>
 
         <details id="mermaidGraphDetails" style="display: none;">
-            <summary><h3>Syntax Graph (Mermaid - Bottom to Top)</h3></summary>
+            <summary><h3>Syntax Graph</h3></summary> <!-- Changed Summary -->
             <div class="mermaid" id="mermaidGraph"></div>
         </details>
     </div>
@@ -284,7 +284,7 @@
             verbalUnitsMap.clear();
             globalTokenNodeTextMap.clear();
 
-            allSentencesData = []; // Resetting the global arrays
+            allSentencesData = [];
             allVerbalUnitsData = [];
             allTokensData = [];
 
@@ -299,18 +299,18 @@
                     if (!sentencesStr) {
                          statusMessages.innerHTML += '<p class="error">"sentences" block not found in CEX file.</p>';
                     } else {
-                        allSentencesData = parseDelimitedText(sentencesStr); // Repopulate
+                        allSentencesData = parseDelimitedText(sentencesStr);
                     }
                     
                     if (verbalUnitsStr) {
-                        allVerbalUnitsData = parseDelimitedText(verbalUnitsStr); // Repopulate
+                        allVerbalUnitsData = parseDelimitedText(verbalUnitsStr);
                         allVerbalUnitsData.forEach(vu => { if (vu.vuid) verbalUnitsMap.set(vu.vuid, vu); });
                     } else {
                          statusMessages.innerHTML += '<p class="warn">"verbal_units" block not found.</p>';
                     }
 
                     if (tokensStr) {
-                        allTokensData = parseDelimitedText(tokensStr); // Repopulate
+                        allTokensData = parseDelimitedText(tokensStr);
                         allTokensData.forEach(token => {
                             if (token.reference && token.text) {
                                 globalTokenNodeTextMap.set(String(token.reference), token.text);
@@ -320,12 +320,12 @@
                         statusMessages.innerHTML += '<p class="warn">"tokens" block not found.</p>';
                     }
                     
-                    populateSentenceSelector(); // Call after data is parsed
+                    populateSentenceSelector();
                 })
                 .catch(error => {
                     console.error('Failed to load CEX file:', error);
                     statusMessages.innerHTML = `<p class="error">Failed to load or parse CEX file: ${error.message}</p>`;
-                    populateSentenceSelector(); // Ensure UI reflects error state for selector
+                    populateSentenceSelector(); 
                 });
         });
 
