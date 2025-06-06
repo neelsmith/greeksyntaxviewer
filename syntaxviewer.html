@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Syntax Annotations</title>
+    <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="file"], select {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 400px;
+        }
+        select {
+            cursor: pointer;
+        }
+        #selectedSentenceDisplay {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .status {
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Greek Syntax Annotation Viewer</h1>
+
+        <div>
+            <label for="cexFile">Choose a CEX file:</label>
+            <input type="file" id="cexFile" accept=".cex,.txt">
+        </div>
+
+        <div>
+            <label for="sentenceSelector">Select a Sentence:</label>
+            <select id="sentenceSelector" disabled>
+                <option value="">-- Load a file first --</option>
+            </select>
+        </div>
+
+        <div id="selectedSentenceDisplay">
+            No sentence selected.
+        </div>
+        
+        <p id="loadingStatus" class="status"></p>
+
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('cexFile');
+        const sentenceSelector = document.getElementById('sentenceSelector');
+        const selectedSentenceDisplay = document.getElementById('selectedSentenceDisplay');
+        const loadingStatus = document.getElementById('loadingStatus');
+
+        fileInput.addEventListener('change', handleFileSelect);
+        sentenceSelector.addEventListener('change', displaySelectedSentence);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                loadingStatus.textContent = 'No file selected.';
+                return;
+            }
+
+            loadingStatus.textContent = 'Loading file...';
+            // Reset UI elements
+            sentenceSelector.innerHTML = '<option value="">-- Processing file --</option>';
+            sentenceSelector.disabled = true;
+            selectedSentenceDisplay.textContent = 'No sentence selected.';
+
+            const parser = new CEXParser();
+            parser.loadFromFile(file)
+                .then(loadedParser => { // 'loadedParser' is the instance after loading is complete
+                    loadingStatus.textContent = 'CEX data loaded successfully!';
+                    console.log('CEX data loaded from file!');
+                    
+                    const sentencesDataString = loadedParser.getDelimitedData("sentences");
+                    console.log("Raw 'sentences' data:", sentencesDataString);
+
+                    if (!sentencesDataString) {
+                        loadingStatus.textContent = "No 'sentences' block found or it's empty.";
+                        sentenceSelector.innerHTML = '<option value="">-- No sentences data --</option>';
+                        console.warn("No 'sentences' data block found or it is empty.");
+                        return;
+                    }
+
+                    populateSentenceSelector(sentencesDataString);
+                })
+                .catch(error => {
+                    loadingStatus.textContent = `Error loading file: ${error.message}`;
+                    sentenceSelector.innerHTML = '<option value="">-- Error loading --</option>';
+                    console.error('Failed to load from file:', error);
+                    alert(`Failed to load CEX file: ${error.message}`);
+                });
+        }
+
+        function populateSentenceSelector(dataString) {
+            // Split the string into lines. Trim to remove potential leading/trailing newlines.
+            const lines = dataString.trim().split('\n');
+
+            if (lines.length <= 1) { // Only header or empty
+                loadingStatus.textContent = "No sentence records found in 'sentences' block.";
+                sentenceSelector.innerHTML = '<option value="">-- No sentence records --</option>';
+                console.warn("Sentences data block has no records (or only a header).");
+                return;
+            }
+
+            // The first line is headers, e.g., "sentence|sequence|connector"
+            // We skip it and process data lines.
+            const sentenceIds = lines.slice(1).map(line => {
+                const columns = line.split('|');
+                // Assuming 'sentence' is the first column (index 0)
+                return columns[0] ? columns[0].trim() : null; 
+            }).filter(id => id); // Filter out any null or empty strings that might result from bad data
+
+            if (sentenceIds.length === 0) {
+                loadingStatus.textContent = "No valid sentence identifiers found.";
+                sentenceSelector.innerHTML = '<option value="">-- No valid sentences --</option>';
+                return;
+            }
+
+            // Clear previous options and add a default one
+            sentenceSelector.innerHTML = '<option value="">-- Select a sentence --</option>';
+            
+            sentenceIds.forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = id;
+                sentenceSelector.appendChild(option);
+            });
+
+            sentenceSelector.disabled = false;
+            loadingStatus.textContent = `Found ${sentenceIds.length} sentences. Please select one.`;
+        }
+
+        function displaySelectedSentence(event) {
+            const selectedValue = event.target.value;
+            if (selectedValue) {
+                selectedSentenceDisplay.textContent = `Selected URN: ${selectedValue}`;
+            } else {
+                selectedSentenceDisplay.textContent = 'No sentence selected.';
+            }
+        }
+
+    </script>
+
+</body>
+</html>
