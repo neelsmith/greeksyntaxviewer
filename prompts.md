@@ -38,3 +38,17 @@ OK! Now let's format that as follows: 1) no need to display the selected sentenc
 
 ---
 Great. Now let's modify the disply of verbal units. Move it above the highlighted text display. List each verbal unit on one line as follows: the syntactic type, highlighted in the same way that tokens of that verbal unit are highlighted in the text display, followed unhighlihgted in parentheses by the semantic type of that verbal unit.
+
+---
+
+
+Super. Let's add an additional further display using the `text` value of each token. We'll need to consider the context as follows: if a token belongs to the same verbal unit as the preceding token, it continues the display on the same line. If it belongs to a different verbal unit, it begins a new line. Line beginnings should be indented according to the depth value of the verbal unit. Level 1 verbal units should be flush left; level 2 units should be indented one level further; etc. Tokens on the same line should be separated by a single white space. Do not use a monospaced font: implement indentation with CSS.
+
+---
+
+
+Super. Now one further display visualizing the syntax as a Mermaid visualization of a top-down directed graph. Relations among nodes are defined by  columns in the tokens table. `reference` identifies a node; use its `text` column as the label for the node with a given `reference` value.  Use `node1relation` as the label for an edge between `reference` and `node1`; use `node2relation` as the label for an edge between `reference` and `node2`. 
+
+---
+
+Great! I'd like to flip the graph though and make bottom up.

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Greek Syntax Annotation Loader</title>
     <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -19,7 +18,6 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 50px; /* Extra space at bottom for mermaid graph */
         }
         h1, h3 {
             color: #555;
@@ -49,39 +47,33 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        #sentenceTextDisplay, #structuredTextDisplayContainer, #mermaidGraphContainer { /* Grouped common styles */
-            margin-top: 20px;
+        #sentenceTextDisplay, #structuredTextDisplayContainer { /* Grouped common styles */
+            margin-top: 20px; /* Increased margin for separation */
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: #fff;
         }
-        #reconstructedSentenceText {
+        #reconstructedSentenceText { /* Specific to the first text display */
             word-wrap: break-word;
             line-height: 1.8;
         }
         .token-span, .vu-syntactic-type-highlight {
             padding: 2px 5px;
             border-radius: 3px;
-            display: inline-block;
-            margin-right: 1px;
+            display: inline-block; /* Crucial for background and padding */
+            margin-right: 1px; /* Minimal space, actual space added via textNode */
             margin-bottom: 2px;
             color: #212529;
+            /* background-color will be set by JS */
         }
         .vu-info-text {
-            margin-left: 5px;
+            margin-left: 5px; /* Space after highlighted type */
             margin-right: 8px;
         }
         .structured-text-line {
-            margin-bottom: 4px;
-            line-height: 1.7;
-        }
-        #mermaidGraphContainer .mermaid { /* Style for the div that Mermaid renders into */
-            text-align: center; /* Center the graph if it's narrower than container */
-        }
-        #mermaidGraphContainer .mermaid svg {
-            max-width: 100%; /* Ensure SVG is responsive */
-            height: auto;
+            margin-bottom: 4px; /* Space between lines in structured display */
+            line-height: 1.7; /* Adjust for readability with token spans */
         }
         .error {
             color: red;
@@ -89,9 +81,6 @@
         }
         .info {
             color: green;
-        }
-        .warn {
-            color: orange;
         }
     </style>
 </head>
@@ -117,7 +106,7 @@
         </div>
 
         <div id="sentenceTextDisplay" style="display: none;">
-            <!-- <h3>Continuous Text:</h3> -->
+            <!-- This could have a subtle title if desired, e.g., <h3>Continuous Text:</h3> -->
             <p id="reconstructedSentenceText"></p>
         </div>
 
@@ -126,18 +115,9 @@
             <div id="structuredTextContent"></div>
         </div>
 
-        <div id="mermaidGraphContainer" style="display: none;">
-            <h3>Syntax Graph (Mermaid)</h3>
-            <div class="mermaid" id="mermaidGraph">
-                <!-- Mermaid will render here -->
-            </div>
-        </div>
-
     </div>
 
     <script>
-        mermaid.initialize({ startOnLoad: false }); // Initialize but don't run on load for dynamic content
-
         const fileInput = document.getElementById('fileInput');
         const sentenceSelector = document.getElementById('sentenceSelector');
         const verbalUnitInfoDiv = document.getElementById('verbalUnitInfo');
@@ -147,15 +127,13 @@
         const reconstructedSentenceTextP = document.getElementById('reconstructedSentenceText');
         const structuredTextDisplayContainer = document.getElementById('structuredTextDisplayContainer');
         const structuredTextContentDiv = document.getElementById('structuredTextContent');
-        const mermaidGraphContainer = document.getElementById('mermaidGraphContainer');
-        const mermaidGraphDiv = document.getElementById('mermaidGraph');
+
 
         let allSentencesData = [];
         let allVerbalUnitsData = [];
         let allTokensData = [];
         const vuColorMap = new Map();
-        let verbalUnitsMap = new Map(); // VUID -> VU object
-        let globalTokenNodeTextMap = new Map(); // Reference -> Text for ALL tokens in file
+        let verbalUnitsMap = new Map(); // For quick lookup of VU details by VUID
 
         function generatePastelColorHsl() {
             const hue = Math.floor(Math.random() * 360);
@@ -168,29 +146,25 @@
             if (!textBlock || typeof textBlock !== 'string') return [];
             const lines = textBlock.trim().split('\n');
             if (lines.length < 2) return [];
+
             const headers = lines[0].split(delimiter).map(h => h.trim());
             const data = [];
+
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(delimiter).map(v => v.trim());
                 if (values.length === headers.length) {
                     const entry = {};
-                    headers.forEach((header, index) => { entry[header] = values[index]; });
+                    headers.forEach((header, index) => {
+                        entry[header] = values[index];
+                    });
                     data.push(entry);
                 } else {
-                    console.warn(`Skipping malformed line: ${lines[i]}`);
+                    console.warn(`Skipping malformed line (expected ${headers.length} fields, got ${values.length}): ${lines[i]}`);
                 }
             }
             return data;
         }
 
-        function escapeMermaidLabel(str) {
-            if (typeof str !== 'string') str = String(str);
-            // Mermaid labels are strings inside quotes.
-            // Main concern is quotes within the label itself.
-            return str.replace(/"/g, '#quot;') // Mermaid uses #quot; for internal quotes
-                      .replace(/</g, '&lt;')   // Basic HTML-like escaping
-                      .replace(/>/g, '&gt;');
-        }
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -201,15 +175,12 @@
             sentenceSelector.disabled = true;
             verbalUnitInfoDiv.style.display = 'none';
             sentenceTextDisplayDiv.style.display = 'none';
-            structuredTextDisplayContainer.style.display = 'none';
-            mermaidGraphContainer.style.display = 'none';
+            structuredTextDisplayContainer.style.display = 'none'; // Hide new display
             reconstructedSentenceTextP.innerHTML = '';
-            structuredTextContentDiv.innerHTML = '';
-            mermaidGraphDiv.innerHTML = 'Loading graph...'; // Clear previous graph
+            structuredTextContentDiv.innerHTML = ''; // Clear new display content
             verbalUnitList.innerHTML = '';
             vuColorMap.clear(); 
             verbalUnitsMap.clear();
-            globalTokenNodeTextMap.clear();
 
             allSentencesData = [];
             allVerbalUnitsData = [];
@@ -233,6 +204,7 @@
                     
                     if (verbalUnitsStr) {
                         allVerbalUnitsData = parseDelimitedText(verbalUnitsStr);
+                        // Populate verbalUnitsMap for quick depth lookup
                         allVerbalUnitsData.forEach(vu => {
                             if (vu.vuid) verbalUnitsMap.set(vu.vuid, vu);
                         });
@@ -242,11 +214,6 @@
 
                     if (tokensStr) {
                         allTokensData = parseDelimitedText(tokensStr);
-                        allTokensData.forEach(token => {
-                            if (token.reference && token.text) {
-                                globalTokenNodeTextMap.set(String(token.reference), token.text);
-                            }
-                        });
                     } else {
                         statusMessages.innerHTML += '<p class="warn">"tokens" block not found. Some features limited.</p>';
                     }
@@ -264,7 +231,8 @@
             sentenceSelector.innerHTML = '<option value="">-- Select a sentence --</option>';
             if (allSentencesData.length === 0) {
                  sentenceSelector.innerHTML = '<option value="">-- No sentences available --</option>';
-                 sentenceSelector.disabled = true; return;
+                 sentenceSelector.disabled = true;
+                 return;
             }
             allSentencesData.forEach(sentenceObj => {
                 if (sentenceObj.sentence) {
@@ -278,18 +246,16 @@
         }
 
 
-        sentenceSelector.addEventListener('change', async function(event) { // Made async for mermaid.render
+        sentenceSelector.addEventListener('change', function(event) {
             const selectedSentenceId = event.target.value;
             verbalUnitList.innerHTML = ''; 
             reconstructedSentenceTextP.innerHTML = ''; 
-            structuredTextContentDiv.innerHTML = '';
-            mermaidGraphDiv.innerHTML = 'Loading graph...'; // Clear previous graph
+            structuredTextContentDiv.innerHTML = ''; // Clear for new sentence
 
             if (!selectedSentenceId) {
                 verbalUnitInfoDiv.style.display = 'none';
                 sentenceTextDisplayDiv.style.display = 'none';
                 structuredTextDisplayContainer.style.display = 'none';
-                mermaidGraphContainer.style.display = 'none';
                 return;
             }
             
@@ -303,7 +269,6 @@
 
             // --- Display Verbal Units ---
             verbalUnitInfoDiv.style.display = 'block';
-            // (verbal unit display logic - unchanged)
             if (allVerbalUnitsData.length === 0) {
                 verbalUnitList.innerHTML = "<li>No verbal unit data loaded.</li>";
             } else if (verbalUnitsInSentence.length === 0) {
@@ -336,39 +301,37 @@
                 });
             }
 
-
-            // --- Common Token Preparation for text displays and graph ---
-            let tokensForSentenceGraph = []; // Use a distinct name, as sorting might differ or filtering later
+            // --- Common Token Preparation for both text displays ---
+            let tokensForSentenceDisplay = [];
             if (allTokensData.length > 0) {
                 const vuidSetForSentence = new Set(
                     verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
                 );
-                if (vuidSetForSentence.size > 0 || allVerbalUnitsData.length === 0) { // if no VUs, process all tokens in sentence
-                    tokensForSentenceGraph = allTokensData
-                        .filter(token => {
-                            // If VUs exist, token must belong to one of them.
-                            // If no VUs loaded at all, we can't filter by VU, but we still need tokens for *this* sentence.
-                            // This requires tokens to have a 'sentence' field if VUs are missing.
-                            // For now, assume tokens are linked to VUs, and VUs to sentences.
-                            // So if vuidSetForSentence is empty because no VUs for THIS sentence, tokensForSentenceGraph will be empty.
-                            return token.verbalunit && vuidSetForSentence.has(token.verbalunit);
-                        })
-                        .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference)); // Essential for ordered displays
+                if (vuidSetForSentence.size > 0) {
+                    tokensForSentenceDisplay = allTokensData
+                        .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
+                        .sort((a, b) => {
+                            const refA = parseFloat(a.reference);
+                            const refB = parseFloat(b.reference);
+                            if (isNaN(refA) && isNaN(refB)) return 0;
+                            if (isNaN(refA)) return 1;
+                            if (isNaN(refB)) return -1;
+                            return refA - refB;
+                        });
                 }
             }
 
 
             // --- 1. Reconstructed Continuous Sentence Text ---
             sentenceTextDisplayDiv.style.display = 'block';
-            // (continuous text display logic - unchanged, uses tokensForSentenceGraph)
-            if (tokensForSentenceGraph.length > 0) {
-                tokensForSentenceGraph.forEach((token, index) => {
+            if (tokensForSentenceDisplay.length > 0) {
+                tokensForSentenceDisplay.forEach((token, index) => {
                     const tokenSpan = document.createElement('span');
                     tokenSpan.textContent = token.text || '';
                     tokenSpan.className = 'token-span';
                     tokenSpan.style.backgroundColor = (token.verbalunit && vuColorMap.get(token.verbalunit)) || '#f0f0f0';
                     reconstructedSentenceTextP.appendChild(tokenSpan);
-                    if (index < tokensForSentenceGraph.length - 1) {
+                    if (index < tokensForSentenceDisplay.length - 1) {
                         reconstructedSentenceTextP.appendChild(document.createTextNode(' '));
                     }
                 });
@@ -378,28 +341,31 @@
                 reconstructedSentenceTextP.textContent = "No tokens found for this sentence's verbal units.";
             }
 
-
             // --- 2. Structured Text Layout ---
             structuredTextDisplayContainer.style.display = 'block';
-            // (structured text logic - unchanged, uses tokensForSentenceGraph)
-            if (tokensForSentenceGraph.length > 0) {
+            if (tokensForSentenceDisplay.length > 0) {
                 let currentLineElement = null;
                 let previousVerbalUnitId = null; 
-                const indentUnit = '1.5em'; 
+                const indentUnit = '1.5em'; // CSS unit for one level of indentation
 
-                tokensForSentenceGraph.forEach(token => {
-                    const currentVerbalUnitId = token.verbalunit;
-                    const tokenVU = verbalUnitsMap.get(currentVerbalUnitId);
+                tokensForSentenceDisplay.forEach(token => {
+                    const currentVerbalUnitId = token.verbalunit; // Already know this exists and is in vuidSetForSentence
+                    const tokenVU = verbalUnitsMap.get(currentVerbalUnitId); // Use map for VU details
 
                     if (currentVerbalUnitId !== previousVerbalUnitId) {
                         currentLineElement = document.createElement('div');
                         currentLineElement.className = 'structured-text-line';
+                        
                         let depth = 1;
                         if (tokenVU && tokenVU.depth) {
                             const parsedDepth = parseInt(tokenVU.depth, 10);
-                            if (!isNaN(parsedDepth) && parsedDepth > 0) depth = parsedDepth;
+                            if (!isNaN(parsedDepth) && parsedDepth > 0) {
+                                depth = parsedDepth;
+                            }
                         }
+                        // CSS calc for indentation: (depth - 1) means depth 1 has 0 effective indent.
                         currentLineElement.style.paddingLeft = `calc(${depth - 1} * ${indentUnit})`;
+                        
                         structuredTextContentDiv.appendChild(currentLineElement);
                         previousVerbalUnitId = currentVerbalUnitId;
                     }
@@ -419,56 +385,6 @@
                 structuredTextContentDiv.textContent = "No token data loaded.";
             } else {
                 structuredTextContentDiv.textContent = "No tokens found to structure.";
-            }
-
-
-            // --- 3. Mermaid Syntax Graph ---
-            mermaidGraphContainer.style.display = 'block';
-            if (tokensForSentenceGraph.length > 0) {
-                let mermaidDefinition = "graph TD;\n";
-                const nodesInGraph = new Set(); // Store all node IDs that will appear in this graph
-
-                // First pass: identify all nodes involved in this sentence's graph
-                tokensForSentenceGraph.forEach(token => {
-                    if (token.reference) nodesInGraph.add(String(token.reference));
-                    if (token.node1) nodesInGraph.add(String(token.node1));
-                    if (token.node2) nodesInGraph.add(String(token.node2));
-                });
-
-                // Define nodes
-                nodesInGraph.forEach(nodeId => {
-                    const label = globalTokenNodeTextMap.get(nodeId) || `Node ${nodeId}`; // Fallback label
-                    mermaidDefinition += `    ${nodeId}["${escapeMermaidLabel(label)}"];\n`;
-                });
-
-                // Define edges (only from tokens within the current sentence)
-                tokensForSentenceGraph.forEach(token => {
-                    const sourceRef = String(token.reference);
-                    if (token.node1 && token.node1relation) {
-                        const targetNode1 = String(token.node1);
-                        mermaidDefinition += `    ${sourceRef} -- "${escapeMermaidLabel(token.node1relation)}" --> ${targetNode1};\n`;
-                    }
-                    if (token.node2 && token.node2relation) {
-                        const targetNode2 = String(token.node2);
-                        mermaidDefinition += `    ${sourceRef} -- "${escapeMermaidLabel(token.node2relation)}" --> ${targetNode2};\n`;
-                    }
-                });
-                
-                // console.log("Mermaid Definition:\n", mermaidDefinition);
-                try {
-                    // Use mermaid.render to get SVG code, then insert it.
-                    // This is more reliable for dynamic updates with newer Mermaid versions.
-                    const { svg } = await mermaid.render('mermaidGeneratedGraph', mermaidDefinition);
-                    mermaidGraphDiv.innerHTML = svg;
-                } catch (error) {
-                    console.error("Mermaid rendering error:", error);
-                    mermaidGraphDiv.innerHTML = `<p class="error">Error rendering graph. Check console.</p><pre>${escapeMermaidLabel(mermaidDefinition)}</pre>`;
-                }
-
-            } else if (allTokensData.length === 0) {
-                mermaidGraphDiv.innerHTML = "<p>No token data loaded to generate graph.</p>";
-            } else {
-                mermaidGraphDiv.innerHTML = "<p>No tokens related to this sentence found to generate graph.</p>";
             }
         });
     </script>

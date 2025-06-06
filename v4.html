@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Syntax Annotation Loader</title>
+    <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h3 {
+            color: #555;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"], select {
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 400px;
+        }
+        #verbalUnitInfo ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #verbalUnitInfo li {
+            /* background-color: #f8f9fa; */ /* Removed default background */
+            padding: 6px 0; /* Adjusted padding */
+            margin-bottom: 5px;
+            /* border: 1px solid #eee; */ /* Removed default border */
+            /* border-left: none; */ /* Ensure no leftover border if it was there */
+            /* padding-left: 0; */   /* Ensure no leftover padding if it was there */
+            display: flex; /* For better alignment of parts if needed, or just let inline flow */
+            align-items: center; /* Vertically align items if flex is used */
+            flex-wrap: wrap; /* Allow wrapping if line gets too long */
+        }
+        #sentenceTextDisplay {
+            margin-top: 15px;
+        }
+        #reconstructedSentenceText {
+            word-wrap: break-word;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            line-height: 1.8;
+        }
+        .token-span, .vu-syntactic-type-highlight { /* Shared class for highlight styling */
+            padding: 2px 5px; /* Slightly more horizontal padding */
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 4px; /* Space after the highlighted part */
+            margin-bottom: 2px; /* For multi-line wrapping */
+            color: #212529;
+            /* background-color will be set by JS */
+        }
+        .vu-info-text { /* For semantic type and other info */
+            margin-right: 8px; /* Space after semantic type before other info */
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .info {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Greek Syntax Annotation Loader</h1>
+
+        <label for="fileInput">Choose a CEX file:</label>
+        <input type="file" id="fileInput" accept=".cex">
+
+        <div id="statusMessages"></div>
+
+        <div>
+            <label for="sentenceSelector">Select Sentence:</label>
+            <select id="sentenceSelector" disabled>
+                <option value="">-- Load a CEX file first --</option>
+            </select>
+        </div>
+
+        <!-- Verbal Unit Info moved UP -->
+        <div id="verbalUnitInfo" style="display: none;">
+            <h3>Verbal Units</h3> <!-- Simplified title slightly -->
+            <ul id="verbalUnitList"></ul>
+        </div>
+
+        <!-- Reconstructed Sentence Text -->
+        <div id="sentenceTextDisplay" style="display: none;">
+            <p id="reconstructedSentenceText"></p>
+        </div>
+
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const sentenceSelector = document.getElementById('sentenceSelector');
+        const verbalUnitInfoDiv = document.getElementById('verbalUnitInfo');
+        const verbalUnitList = document.getElementById('verbalUnitList');
+        const statusMessages = document.getElementById('statusMessages');
+        const sentenceTextDisplayDiv = document.getElementById('sentenceTextDisplay');
+        const reconstructedSentenceTextP = document.getElementById('reconstructedSentenceText');
+
+        let allSentencesData = [];
+        let allVerbalUnitsData = [];
+        let allTokensData = [];
+        const vuColorMap = new Map();
+
+        function generatePastelColorHsl() {
+            const hue = Math.floor(Math.random() * 360);
+            const saturation = Math.floor(Math.random() * 30) + 50; 
+            const lightness = Math.floor(Math.random() * 15) + 80;  
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        function parseDelimitedText(textBlock, delimiter = '|') {
+            // ... (parser function remains the same)
+            if (!textBlock || typeof textBlock !== 'string') return [];
+            const lines = textBlock.trim().split('\n');
+            if (lines.length < 2) return [];
+
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim());
+                if (values.length === headers.length) {
+                    const entry = {};
+                    headers.forEach((header, index) => {
+                        entry[header] = values[index];
+                    });
+                    data.push(entry);
+                } else {
+                    console.warn(`Skipping malformed line (expected ${headers.length} fields, got ${values.length}): ${lines[i]}`);
+                }
+            }
+            return data;
+        }
+
+
+        fileInput.addEventListener('change', function(event) {
+            // ... (file loading logic remains largely the same, just ensure UI resets)
+            const file = event.target.files[0];
+            if (!file) return;
+
+            statusMessages.innerHTML = '<p class="info">Loading file...</p>';
+            sentenceSelector.innerHTML = '<option value="">-- Loading sentences --</option>';
+            sentenceSelector.disabled = true;
+            verbalUnitInfoDiv.style.display = 'none';
+            sentenceTextDisplayDiv.style.display = 'none';
+            reconstructedSentenceTextP.innerHTML = '';
+            verbalUnitList.innerHTML = '';
+            vuColorMap.clear(); 
+
+            allSentencesData = [];
+            allVerbalUnitsData = [];
+            allTokensData = [];
+
+            const parser = new CEXParser();
+            parser.loadFromFile(file)
+                .then(p => {
+                    statusMessages.innerHTML = '<p class="info">CEX data loaded successfully!</p>';
+                    console.log('CEX data loaded from file!');
+
+                    const sentencesStr = p.getDelimitedData("sentences");
+                    const verbalUnitsStr = p.getDelimitedData("verbal_units");
+                    const tokensStr = p.getDelimitedData("tokens");
+
+                    let errorsFound = false;
+                    if (!sentencesStr) {
+                         statusMessages.innerHTML += '<p class="error">"sentences" block not found in CEX file.</p>';
+                         sentenceSelector.innerHTML = '<option value="">-- No sentences found --</option>';
+                         errorsFound = true;
+                    }
+                     if (!verbalUnitsStr) {
+                         statusMessages.innerHTML += '<p class="error">"verbal_units" block not found. Analysis will be limited.</p>';
+                    }
+                     if (!tokensStr) {
+                         statusMessages.innerHTML += '<p class="error">"tokens" block not found. Analysis will be limited.</p>';
+                    }
+
+                    if (errorsFound && !sentencesStr) return;
+
+                    allSentencesData = parseDelimitedText(sentencesStr);
+                    allVerbalUnitsData = verbalUnitsStr ? parseDelimitedText(verbalUnitsStr) : [];
+                    allTokensData = tokensStr ? parseDelimitedText(tokensStr) : [];
+                    
+                    populateSentenceSelector();
+                })
+                .catch(error => {
+                    console.error('Failed to load from file:', error);
+                    statusMessages.innerHTML = `<p class="error">Failed to load or parse CEX file: ${error.message}</p>`;
+                    sentenceSelector.innerHTML = '<option value="">-- Error loading file --</option>';
+                });
+        });
+
+        function populateSentenceSelector() {
+            // ... (remains the same)
+            sentenceSelector.innerHTML = '<option value="">-- Select a sentence --</option>';
+            if (allSentencesData.length === 0) {
+                 sentenceSelector.innerHTML = '<option value="">-- No sentences available --</option>';
+                 sentenceSelector.disabled = true;
+                 return;
+            }
+
+            allSentencesData.forEach(sentenceObj => {
+                if (sentenceObj.sentence) {
+                    const option = document.createElement('option');
+                    option.value = sentenceObj.sentence;
+                    option.textContent = sentenceObj.sentence;
+                    sentenceSelector.appendChild(option);
+                }
+            });
+            sentenceSelector.disabled = false;
+        }
+
+
+        sentenceSelector.addEventListener('change', function(event) {
+            const selectedSentenceId = event.target.value;
+            verbalUnitList.innerHTML = ''; 
+            reconstructedSentenceTextP.innerHTML = ''; 
+
+            if (!selectedSentenceId) {
+                verbalUnitInfoDiv.style.display = 'none';
+                sentenceTextDisplayDiv.style.display = 'none';
+                return;
+            }
+            
+            // --- Verbal Units and Color Assignment ---
+            const verbalUnitsInSentence = allVerbalUnitsData.filter(vu => vu.sentence === selectedSentenceId);
+            
+            verbalUnitsInSentence.forEach(vu => {
+                if (vu.vuid && !vuColorMap.has(vu.vuid)) {
+                    vuColorMap.set(vu.vuid, generatePastelColorHsl());
+                }
+            });
+
+            // --- Display Verbal Units (NEW FORMAT) ---
+            verbalUnitInfoDiv.style.display = 'block';
+            if (allVerbalUnitsData.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = "No verbal unit data loaded.";
+                verbalUnitList.appendChild(li);
+            } else {
+                if (verbalUnitsInSentence.length === 0) {
+                    const li = document.createElement('li');
+                    li.textContent = `No verbal units found for sentence ${selectedSentenceId}.`;
+                    verbalUnitList.appendChild(li);
+                } else {
+                    verbalUnitsInSentence.forEach(vu => {
+                        const li = document.createElement('li');
+                        
+                        // 1. Syntactic Type (highlighted)
+                        const syntacticTypeSpan = document.createElement('span');
+                        syntacticTypeSpan.textContent = vu.syntactic_type || 'N/A';
+                        syntacticTypeSpan.className = 'vu-syntactic-type-highlight'; // Use specific or shared class
+                        if (vu.vuid && vuColorMap.has(vu.vuid)) {
+                            syntacticTypeSpan.style.backgroundColor = vuColorMap.get(vu.vuid);
+                        } else {
+                            syntacticTypeSpan.style.backgroundColor = '#eee'; // Default if no color
+                        }
+                        li.appendChild(syntacticTypeSpan);
+
+                        // 2. Semantic Type (in parentheses, unhighlighted)
+                        const semanticTypeSpan = document.createElement('span');
+                        semanticTypeSpan.className = 'vu-info-text';
+                        semanticTypeSpan.textContent = `(${vu.semantic_type || 'N/A'})`;
+                        li.appendChild(semanticTypeSpan);
+
+                        // 3. Optional: VUID and Token Count (for completeness)
+                        const additionalInfoSpan = document.createElement('span');
+                        additionalInfoSpan.className = 'vu-info-text'; // Reuse class for styling
+                        let additionalText = "";
+                        if (vu.vuid) {
+                            additionalText += `ID: ${vu.vuid}`;
+                        }
+                        if (allTokensData.length > 0) {
+                            const tokensInVerbalUnit = allTokensData.filter(token => token.verbalunit === vu.vuid);
+                            const tokenCount = tokensInVerbalUnit.length;
+                            additionalText += `${vu.vuid ? ', ' : ''}Tokens: ${tokenCount}`;
+                        } else if (allTokensData.length === 0 && verbalUnitsInSentence.length > 0) {
+                             additionalText += `${vu.vuid ? ', ' : ''}Tokens: N/A (no token data)`;
+                        }
+                        
+                        if(additionalText) {
+                            additionalInfoSpan.textContent = `- ${additionalText}`;
+                            li.appendChild(additionalInfoSpan);
+                        }
+                        
+                        verbalUnitList.appendChild(li);
+                    });
+                }
+            }
+
+
+            // --- Reconstructed Sentence Text with Colored Tokens (remains the same logic) ---
+            sentenceTextDisplayDiv.style.display = 'block';
+            if (allTokensData.length === 0) {
+                reconstructedSentenceTextP.textContent = "No token data loaded to reconstruct sentence.";
+            } else {
+                const vuidSetForSentence = new Set(
+                    verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
+                );
+
+                if (vuidSetForSentence.size === 0 && allVerbalUnitsData.length > 0 && verbalUnitsInSentence.length === 0) {
+                     reconstructedSentenceTextP.textContent = `No verbal units (and thus no tokens) found for sentence ${selectedSentenceId}.`;
+                } else if (allVerbalUnitsData.length === 0 || (verbalUnitsInSentence.length > 0 && vuidSetForSentence.size === 0 && !allVerbalUnitsData.some(vu => vu.sentence === selectedSentenceId && vu.vuid)) ) {
+                     reconstructedSentenceTextP.textContent = "No verbal unit data with IDs available for this sentence to link tokens.";
+                } else {
+                    let tokensForSentence = allTokensData.filter(token => 
+                        token.verbalunit && vuidSetForSentence.has(token.verbalunit)
+                    );
+
+                    tokensForSentence.sort((a, b) => {
+                        const refA = parseFloat(a.reference);
+                        const refB = parseFloat(b.reference);
+                        if (isNaN(refA) && isNaN(refB)) return 0;
+                        if (isNaN(refA)) return 1;
+                        if (isNaN(refB)) return -1;
+                        return refA - refB;
+                    });
+                    
+                    if (tokensForSentence.length > 0) {
+                        tokensForSentence.forEach((token, index) => {
+                            const tokenSpan = document.createElement('span');
+                            tokenSpan.textContent = token.text || '';
+                            tokenSpan.className = 'token-span'; // Re-use class
+
+                            if (token.verbalunit && vuColorMap.has(token.verbalunit)) {
+                                tokenSpan.style.backgroundColor = vuColorMap.get(token.verbalunit);
+                            } else {
+                                tokenSpan.style.backgroundColor = '#f0f0f0'; // Default for tokens with no VU color
+                            }
+                            reconstructedSentenceTextP.appendChild(tokenSpan);
+
+                            if (index < tokensForSentence.length - 1) {
+                                reconstructedSentenceTextP.appendChild(document.createTextNode(' '));
+                            }
+                        });
+                    } else {
+                         if (vuidSetForSentence.size > 0) {
+                            reconstructedSentenceTextP.textContent = "No tokens found associated with the verbal units of this sentence.";
+                         } else if (verbalUnitsInSentence.length > 0) {
+                            reconstructedSentenceTextP.textContent = "Verbal units for this sentence exist but lack IDs, or no tokens match them.";
+                         } else {
+                            reconstructedSentenceTextP.textContent = "No verbal units or tokens found for this sentence.";
+                         }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
