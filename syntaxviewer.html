@@ -127,7 +127,7 @@
         </div>
 
         <div id="mermaidGraphContainer" style="display: none;">
-            <h3>Syntax Graph (Mermaid - Bottom Up)</h3>
+            <h3>Syntax Graph (Mermaid - Bottom to Top)</h3>
             <div class="mermaid" id="mermaidGraph">
                 <!-- Mermaid will render here -->
             </div>
@@ -338,7 +338,7 @@
                 const vuidSetForSentence = new Set(
                     verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
                 );
-                if (vuidSetForSentence.size > 0 || allVerbalUnitsData.length === 0) {
+                if (vuidSetForSentence.size > 0 || allVerbalUnitsData.length === 0) { // If no VUs, this might be problematic if tokens aren't directly linked to sentences
                     tokensForSentenceGraph = allTokensData
                         .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
                         .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
@@ -405,7 +405,7 @@
             // --- 3. Mermaid Syntax Graph ---
             mermaidGraphContainer.style.display = 'block';
             if (tokensForSentenceGraph.length > 0) {
-                let mermaidDefinition = "graph BT;\n"; // Changed TD to BU for Bottom-Up
+                let mermaidDefinition = "graph BT;\n"; // Corrected to BT for Bottom-to-Top
                 const nodesInGraph = new Set();
                 tokensForSentenceGraph.forEach(token => {
                     if (token.reference) nodesInGraph.add(String(token.reference));
