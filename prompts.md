@@ -68,3 +68,20 @@ Excellent! Here's one further refinement. I would like to put each of the two se
 ---
 
 Oops. Now the menu to choose sentences is empty so we can't even start!
+
+---
+
+Super. Could we add one further collapsible section, titled "Key"? Please place it above the "sentenceTextDisplay" div in the the HTML, and list three pieces of information, namely:
+
+- *boxes* == verb forms
+- *underscore* == subject of verb
+- *underscore + overline* == direct object
+
+---
+
+Again lost the  menu to choose sentences! It's empty so we can't even start!
+
+---
+
+Nice! Now I'd like to edit a couple of labels. 1) Please change the title of the page and the top level heading from "Greek Syntax Annotation Loader" to "Greek Syntax Viewer". 
+2) Please change the heading "Structured Layout" to "Text indented by level of subordination" 3) Please change the heading "Syntax Graph (Mermaid - Bottom to Top)" to "Syntax Graph".
