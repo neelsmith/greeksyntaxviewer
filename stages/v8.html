@@ -19,7 +19,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 50px; 
+            margin-bottom: 50px; /* Extra space at bottom for mermaid graph */
         }
         h1, h3 {
             color: #555;
@@ -49,7 +49,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        #sentenceTextDisplay, #structuredTextDisplayContainer, #mermaidGraphContainer {
+        #sentenceTextDisplay, #structuredTextDisplayContainer, #mermaidGraphContainer { /* Grouped common styles */
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ddd;
@@ -61,13 +61,12 @@
             line-height: 1.8;
         }
         .token-span, .vu-syntactic-type-highlight {
-            padding: 2px 5px; /* Base padding */
+            padding: 2px 5px;
             border-radius: 3px;
             display: inline-block;
             margin-right: 1px;
             margin-bottom: 2px;
             color: #212529;
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
         .vu-info-text {
             margin-left: 5px;
@@ -77,32 +76,22 @@
             margin-bottom: 4px;
             line-height: 1.7;
         }
-        #mermaidGraphContainer .mermaid {
-            text-align: center;
+        #mermaidGraphContainer .mermaid { /* Style for the div that Mermaid renders into */
+            text-align: center; /* Center the graph if it's narrower than container */
         }
         #mermaidGraphContainer .mermaid svg {
-            max-width: 100%;
+            max-width: 100%; /* Ensure SVG is responsive */
             height: auto;
         }
-        .error { color: red; font-weight: bold; }
-        .info { color: green; }
-        .warn { color: orange; }
-
-        /* --- Token Decoration Classes --- */
-        .token-decoration-unit-verb {
-            border: 1.5px solid #333; /* Darker box */
+        .error {
+            color: red;
+            font-weight: bold;
         }
-        .token-decoration-subject {
-            text-decoration: underline;
-            text-decoration-color: #333; /* Match border color for consistency */
-            text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px; /* Give a bit of space */
+        .info {
+            color: green;
         }
-        .token-decoration-direct-object {
-            text-decoration: overline underline;
-            text-decoration-color: #333;
-            text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px; /* For underline, overline offset is less controllable directly */
+        .warn {
+            color: orange;
         }
     </style>
 </head>
@@ -128,6 +117,7 @@
         </div>
 
         <div id="sentenceTextDisplay" style="display: none;">
+            <!-- <h3>Continuous Text:</h3> -->
             <p id="reconstructedSentenceText"></p>
         </div>
 
@@ -138,12 +128,15 @@
 
         <div id="mermaidGraphContainer" style="display: none;">
             <h3>Syntax Graph (Mermaid - Bottom to Top)</h3>
-            <div class="mermaid" id="mermaidGraph"></div>
+            <div class="mermaid" id="mermaidGraph">
+                <!-- Mermaid will render here -->
+            </div>
         </div>
+
     </div>
 
     <script>
-        mermaid.initialize({ startOnLoad: false });
+        mermaid.initialize({ startOnLoad: false }); // Initialize but don't run on load for dynamic content
 
         const fileInput = document.getElementById('fileInput');
         const sentenceSelector = document.getElementById('sentenceSelector');
@@ -160,9 +153,9 @@
         let allSentencesData = [];
         let allVerbalUnitsData = [];
         let allTokensData = [];
-        const vuColorMap = new Map(); // Global VU ID -> color map
-        let verbalUnitsMap = new Map(); // Global VUID -> VU object map
-        let globalTokenNodeTextMap = new Map(); // Global Reference ID -> Token Text map
+        const vuColorMap = new Map();
+        let verbalUnitsMap = new Map(); // VUID -> VU object
+        let globalTokenNodeTextMap = new Map(); // Reference -> Text for ALL tokens in file
 
         function generatePastelColorHsl() {
             const hue = Math.floor(Math.random() * 360);
@@ -192,27 +185,9 @@
 
         function escapeMermaidLabel(str) {
             if (typeof str !== 'string') str = String(str);
-            return str.replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-        
-        function styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap) {
-            tokenSpan.textContent = token.text || '';
-            tokenSpan.className = 'token-span'; 
-
-            if (token.verbalunit && currentSentenceVuColorMap.has(token.verbalunit)) {
-                tokenSpan.style.backgroundColor = currentSentenceVuColorMap.get(token.verbalunit);
-            } else {
-                tokenSpan.style.backgroundColor = '#f0f0f0';
-            }
-
-            const relation = token.node1relation ? token.node1relation.trim() : '';
-            if (relation === 'unit verb') {
-                tokenSpan.classList.add('token-decoration-unit-verb');
-            } else if (relation === 'subject') {
-                tokenSpan.classList.add('token-decoration-subject');
-            } else if (relation === 'direct object') {
-                tokenSpan.classList.add('token-decoration-direct-object');
-            }
+            return str.replace(/"/g, '#quot;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;');
         }
 
         fileInput.addEventListener('change', function(event) {
@@ -242,6 +217,7 @@
             parser.loadFromFile(file)
                 .then(p => {
                     statusMessages.innerHTML = '<p class="info">CEX data loaded successfully!</p>';
+                    
                     const sentencesStr = p.getDelimitedData("sentences");
                     const verbalUnitsStr = p.getDelimitedData("verbal_units");
                     const tokensStr = p.getDelimitedData("tokens");
@@ -255,9 +231,11 @@
                     
                     if (verbalUnitsStr) {
                         allVerbalUnitsData = parseDelimitedText(verbalUnitsStr);
-                        allVerbalUnitsData.forEach(vu => { if (vu.vuid) verbalUnitsMap.set(vu.vuid, vu); });
+                        allVerbalUnitsData.forEach(vu => {
+                            if (vu.vuid) verbalUnitsMap.set(vu.vuid, vu);
+                        });
                     } else {
-                         statusMessages.innerHTML += '<p class="warn">"verbal_units" block not found.</p>';
+                         statusMessages.innerHTML += '<p class="warn">"verbal_units" block not found. Some features limited.</p>';
                     }
 
                     if (tokensStr) {
@@ -268,8 +246,9 @@
                             }
                         });
                     } else {
-                        statusMessages.innerHTML += '<p class="warn">"tokens" block not found.</p>';
+                        statusMessages.innerHTML += '<p class="warn">"tokens" block not found. Some features limited.</p>';
                     }
+                    
                     populateSentenceSelector();
                 })
                 .catch(error => {
@@ -296,6 +275,7 @@
             sentenceSelector.disabled = false;
         }
 
+
         sentenceSelector.addEventListener('change', async function(event) { 
             const selectedSentenceId = event.target.value;
             verbalUnitList.innerHTML = ''; 
@@ -313,16 +293,13 @@
             
             const verbalUnitsInSentence = allVerbalUnitsData.filter(vu => vu.sentence === selectedSentenceId);
             
-            const currentSentenceVuColorMap = new Map(); 
             verbalUnitsInSentence.forEach(vu => {
-                if (vu.vuid) {
-                    if (!vuColorMap.has(vu.vuid)) {
-                        vuColorMap.set(vu.vuid, generatePastelColorHsl());
-                    }
-                    currentSentenceVuColorMap.set(vu.vuid, vuColorMap.get(vu.vuid));
+                if (vu.vuid && !vuColorMap.has(vu.vuid)) {
+                    vuColorMap.set(vu.vuid, generatePastelColorHsl());
                 }
             });
 
+            // --- Display Verbal Units ---
             verbalUnitInfoDiv.style.display = 'block';
             if (allVerbalUnitsData.length === 0) {
                 verbalUnitList.innerHTML = "<li>No verbal unit data loaded.</li>";
@@ -334,12 +311,14 @@
                     const syntacticTypeSpan = document.createElement('span');
                     syntacticTypeSpan.textContent = vu.syntactic_type || 'N/A';
                     syntacticTypeSpan.className = 'vu-syntactic-type-highlight';
-                    syntacticTypeSpan.style.backgroundColor = (vu.vuid && currentSentenceVuColorMap.get(vu.vuid)) || '#eee';
+                    syntacticTypeSpan.style.backgroundColor = (vu.vuid && vuColorMap.get(vu.vuid)) || '#eee';
                     li.appendChild(syntacticTypeSpan);
+
                     const semanticTypeSpan = document.createElement('span');
                     semanticTypeSpan.className = 'vu-info-text';
                     semanticTypeSpan.textContent = `(${vu.semantic_type || 'N/A'})`;
                     li.appendChild(semanticTypeSpan);
+
                     const additionalInfoSpan = document.createElement('span');
                     additionalInfoSpan.className = 'vu-info-text';
                     let additionalText = "";
@@ -354,40 +333,44 @@
                 });
             }
 
-            let tokensForTextDisplays = []; 
-            let tokensForGraphSource = []; // Tokens from the current sentence that define graph edges
-
+            let tokensForSentenceGraph = []; 
             if (allTokensData.length > 0) {
                 const vuidSetForSentence = new Set(
                     verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
                 );
-                const sentenceTokens = allTokensData
-                    .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
-                    .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
-                tokensForTextDisplays = [...sentenceTokens]; 
-                tokensForGraphSource = [...sentenceTokens];  
+                if (vuidSetForSentence.size > 0 || allVerbalUnitsData.length === 0) { // If no VUs, this might be problematic if tokens aren't directly linked to sentences
+                    tokensForSentenceGraph = allTokensData
+                        .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
+                        .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
+                }
             }
 
+            // --- 1. Reconstructed Continuous Sentence Text ---
             sentenceTextDisplayDiv.style.display = 'block';
-            if (tokensForTextDisplays.length > 0) {
-                tokensForTextDisplays.forEach((token, index) => {
+            if (tokensForSentenceGraph.length > 0) {
+                tokensForSentenceGraph.forEach((token, index) => {
                     const tokenSpan = document.createElement('span');
-                    styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap);
+                    tokenSpan.textContent = token.text || '';
+                    tokenSpan.className = 'token-span';
+                    tokenSpan.style.backgroundColor = (token.verbalunit && vuColorMap.get(token.verbalunit)) || '#f0f0f0';
                     reconstructedSentenceTextP.appendChild(tokenSpan);
-                    if (index < tokensForTextDisplays.length - 1) {
+                    if (index < tokensForSentenceGraph.length - 1) {
                         reconstructedSentenceTextP.appendChild(document.createTextNode(' '));
                     }
                 });
+            } else if (allTokensData.length === 0) {
+                reconstructedSentenceTextP.textContent = "No token data loaded.";
             } else {
-                reconstructedSentenceTextP.textContent = allTokensData.length === 0 ? "No token data loaded." : "No tokens for this sentence.";
+                reconstructedSentenceTextP.textContent = "No tokens found for this sentence's verbal units.";
             }
 
+            // --- 2. Structured Text Layout ---
             structuredTextDisplayContainer.style.display = 'block';
-            if (tokensForTextDisplays.length > 0) {
+            if (tokensForSentenceGraph.length > 0) {
                 let currentLineElement = null;
                 let previousVerbalUnitId = null; 
                 const indentUnit = '1.5em'; 
-                tokensForTextDisplays.forEach(token => {
+                tokensForSentenceGraph.forEach(token => {
                     const currentVerbalUnitId = token.verbalunit;
                     const tokenVU = verbalUnitsMap.get(currentVerbalUnitId);
                     if (currentVerbalUnitId !== previousVerbalUnitId) {
@@ -407,19 +390,24 @@
                             currentLineElement.appendChild(document.createTextNode(' '));
                         }
                         const tokenSpan = document.createElement('span');
-                        styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap); 
+                        tokenSpan.textContent = token.text || '';
+                        tokenSpan.className = 'token-span'; 
+                        tokenSpan.style.backgroundColor = vuColorMap.get(currentVerbalUnitId) || '#f0f0f0';
                         currentLineElement.appendChild(tokenSpan);
                     }
                 });
+            } else if (allTokensData.length === 0) {
+                structuredTextContentDiv.textContent = "No token data loaded.";
             } else {
-                structuredTextContentDiv.textContent = allTokensData.length === 0 ? "No token data loaded." : "No tokens for this sentence.";
+                structuredTextContentDiv.textContent = "No tokens found to structure.";
             }
 
+            // --- 3. Mermaid Syntax Graph ---
             mermaidGraphContainer.style.display = 'block';
-            if (tokensForGraphSource.length > 0) {
-                let mermaidDefinition = "graph BT;\n";
+            if (tokensForSentenceGraph.length > 0) {
+                let mermaidDefinition = "graph BT;\n"; // Corrected to BT for Bottom-to-Top
                 const nodesInGraph = new Set();
-                tokensForGraphSource.forEach(token => {
+                tokensForSentenceGraph.forEach(token => {
                     if (token.reference) nodesInGraph.add(String(token.reference));
                     if (token.node1) nodesInGraph.add(String(token.node1));
                     if (token.node2) nodesInGraph.add(String(token.node2));
@@ -428,7 +416,7 @@
                     const label = globalTokenNodeTextMap.get(nodeId) || `Node ${nodeId}`;
                     mermaidDefinition += `    ${nodeId}["${escapeMermaidLabel(label)}"];\n`;
                 });
-                tokensForGraphSource.forEach(token => {
+                tokensForSentenceGraph.forEach(token => {
                     const sourceRef = String(token.reference);
                     if (token.node1 && token.node1relation) {
                         const targetNode1 = String(token.node1);
@@ -447,8 +435,10 @@
                     console.error("Mermaid rendering error:", error);
                     mermaidGraphDiv.innerHTML = `<p class="error">Error rendering graph. Check console.</p><pre>${escapeMermaidLabel(mermaidDefinition)}</pre>`;
                 }
+            } else if (allTokensData.length === 0) {
+                mermaidGraphDiv.innerHTML = "<p>No token data loaded to generate graph.</p>";
             } else {
-                mermaidGraphDiv.innerHTML = allTokensData.length === 0 ? "<p>No token data loaded.</p>" : "<p>No tokens for graph.</p>";
+                mermaidGraphDiv.innerHTML = "<p>No tokens related to this sentence found to generate graph.</p>";
             }
         });
     </script>

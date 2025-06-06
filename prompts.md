@@ -52,3 +52,11 @@ Super. Now one further display visualizing the syntax as a Mermaid visualization
 ---
 
 Great! I'd like to flip the graph though and make bottom up.
+
+---
+
+Excellent. A couple of tweaks: 1) in the two displays that highlight tokens by verbal unit, let's add decorations for specific values of its `node1relation`. If the value is `unit verb`, add a box around the token; if it is `subject`, add an underline; if it is `direct object`, add both and overline and an underline.
+
+---
+
+The display is good in both the section labelled "Verbal Units" and the "Structured Layout" section, but the Syntax Graph has disappeared! That should not have been changed at all. Could you revert that part of the app so that the Mermaid diagram is restored?
