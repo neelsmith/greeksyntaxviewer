@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Syntax Annotation Loader</title>
+    <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #555;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"], select {
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 400px;
+        }
+        #selectedSentenceDisplay {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+        }
+        #verbalUnitInfo ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #verbalUnitInfo li {
+            background-color: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .info {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Greek Syntax Annotation Loader</h1>
+
+        <label for="fileInput">Choose a CEX file:</label>
+        <input type="file" id="fileInput" accept=".cex">
+
+        <div id="statusMessages"></div>
+
+        <div>
+            <label for="sentenceSelector">Select Sentence:</label>
+            <select id="sentenceSelector" disabled>
+                <option value="">-- Load a CEX file first --</option>
+            </select>
+        </div>
+
+        <div id="selectedSentenceDisplay" style="display: none;">
+            <h2>Selected Sentence:</h2>
+            <p id="currentSentenceId"></p>
+        </div>
+
+        <div id="verbalUnitInfo" style="display: none;">
+            <h2>Verbal Units and Token Counts:</h2>
+            <ul id="verbalUnitList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const sentenceSelector = document.getElementById('sentenceSelector');
+        const selectedSentenceDisplay = document.getElementById('selectedSentenceDisplay');
+        const currentSentenceIdDisplay = document.getElementById('currentSentenceId');
+        const verbalUnitInfoDiv = document.getElementById('verbalUnitInfo');
+        const verbalUnitList = document.getElementById('verbalUnitList');
+        const statusMessages = document.getElementById('statusMessages');
+
+        let allSentencesData = [];
+        let allVerbalUnitsData = [];
+        let allTokensData = [];
+
+        // Helper function to parse pipe-delimited CEX data blocks
+        // Assumes the first line is headers
+        function parseDelimitedText(textBlock, delimiter = '|') {
+            const lines = textBlock.trim().split('\n');
+            if (lines.length < 2) return []; // No data or only headers
+
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim());
+                if (values.length === headers.length) {
+                    const entry = {};
+                    headers.forEach((header, index) => {
+                        entry[header] = values[index];
+                    });
+                    data.push(entry);
+                } else {
+                    console.warn(`Skipping malformed line: ${lines[i]}`);
+                }
+            }
+            return data;
+        }
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            statusMessages.innerHTML = '<p class="info">Loading file...</p>';
+            sentenceSelector.innerHTML = '<option value="">-- Loading sentences --</option>';
+            sentenceSelector.disabled = true;
+            selectedSentenceDisplay.style.display = 'none';
+            verbalUnitInfoDiv.style.display = 'none';
+            verbalUnitList.innerHTML = '';
+
+            const parser = new CEXParser();
+            parser.loadFromFile(file)
+                .then(p => {
+                    statusMessages.innerHTML = '<p class="info">CEX data loaded successfully!</p>';
+                    console.log('CEX data loaded from file!');
+
+                    const sentencesStr = p.getDelimitedData("sentences");
+                    const verbalUnitsStr = p.getDelimitedData("verbal_units");
+                    const tokensStr = p.getDelimitedData("tokens");
+
+                    if (!sentencesStr) {
+                         statusMessages.innerHTML += '<p class="error">"sentences" block not found in CEX file.</p>';
+                         sentenceSelector.innerHTML = '<option value="">-- No sentences found --</option>';
+                         return;
+                    }
+                     if (!verbalUnitsStr) {
+                         statusMessages.innerHTML += '<p class="error">"verbal_units" block not found. Analysis will be limited.</p>';
+                    }
+                     if (!tokensStr) {
+                         statusMessages.innerHTML += '<p class="error">"tokens" block not found. Analysis will be limited.</p>';
+                    }
+
+                    allSentencesData = parseDelimitedText(sentencesStr);
+                    allVerbalUnitsData = verbalUnitsStr ? parseDelimitedText(verbalUnitsStr) : [];
+                    allTokensData = tokensStr ? parseDelimitedText(tokensStr) : [];
+                    
+                    populateSentenceSelector();
+                })
+                .catch(error => {
+                    console.error('Failed to load from file:', error);
+                    statusMessages.innerHTML = `<p class="error">Failed to load or parse CEX file: ${error.message}</p>`;
+                    sentenceSelector.innerHTML = '<option value="">-- Error loading file --</option>';
+                });
+        });
+
+        function populateSentenceSelector() {
+            sentenceSelector.innerHTML = '<option value="">-- Select a sentence --</option>'; // Clear previous options
+            if (allSentencesData.length === 0) {
+                 sentenceSelector.innerHTML = '<option value="">-- No sentences available --</option>';
+                 sentenceSelector.disabled = true;
+                 return;
+            }
+
+            allSentencesData.forEach(sentenceObj => {
+                if (sentenceObj.sentence) { // Ensure sentence property exists
+                    const option = document.createElement('option');
+                    option.value = sentenceObj.sentence;
+                    option.textContent = sentenceObj.sentence;
+                    sentenceSelector.appendChild(option);
+                }
+            });
+            sentenceSelector.disabled = false;
+        }
+
+        sentenceSelector.addEventListener('change', function(event) {
+            const selectedSentence = event.target.value;
+            verbalUnitList.innerHTML = ''; // Clear previous results
+
+            if (!selectedSentence) {
+                selectedSentenceDisplay.style.display = 'none';
+                verbalUnitInfoDiv.style.display = 'none';
+                return;
+            }
+
+            currentSentenceIdDisplay.textContent = selectedSentence;
+            selectedSentenceDisplay.style.display = 'block';
+            verbalUnitInfoDiv.style.display = 'block';
+
+            if (allVerbalUnitsData.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = "No verbal unit data loaded.";
+                verbalUnitList.appendChild(li);
+                return;
+            }
+            if (allTokensData.length === 0 && allVerbalUnitsData.length > 0) {
+                 const li = document.createElement('li');
+                li.textContent = "No token data loaded to count tokens for verbal units.";
+                verbalUnitList.appendChild(li);
+                // We can still list VUs without token counts if needed, but for now, let's stop.
+                return;
+            }
+
+
+            const verbalUnitsInSentence = allVerbalUnitsData.filter(vu => vu.sentence === selectedSentence);
+
+            if (verbalUnitsInSentence.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = `No verbal units found for sentence ${selectedSentence}.`;
+                verbalUnitList.appendChild(li);
+                return;
+            }
+            
+            verbalUnitsInSentence.forEach(vu => {
+                const vuId = vu.vuid;
+                if (!vuId) {
+                    console.warn("Verbal unit found without a 'vuid':", vu);
+                    return; // Skip if no vuid
+                }
+
+                const tokensInVerbalUnit = allTokensData.filter(token => token.verbalunit === vuId);
+                const tokenCount = tokensInVerbalUnit.length;
+
+                const li = document.createElement('li');
+                li.textContent = `Verbal Unit ID: ${vuId} - Tokens: ${tokenCount}`;
+                verbalUnitList.appendChild(li);
+            });
+        });
+
+    </script>
+</body>
+</html>
