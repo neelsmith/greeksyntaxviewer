@@ -127,7 +127,7 @@
         </div>
 
         <div id="mermaidGraphContainer" style="display: none;">
-            <h3>Syntax Graph (Mermaid)</h3>
+            <h3>Syntax Graph (Mermaid - Bottom Up)</h3>
             <div class="mermaid" id="mermaidGraph">
                 <!-- Mermaid will render here -->
             </div>
@@ -185,10 +185,8 @@
 
         function escapeMermaidLabel(str) {
             if (typeof str !== 'string') str = String(str);
-            // Mermaid labels are strings inside quotes.
-            // Main concern is quotes within the label itself.
-            return str.replace(/"/g, '#quot;') // Mermaid uses #quot; for internal quotes
-                      .replace(/</g, '&lt;')   // Basic HTML-like escaping
+            return str.replace(/"/g, '#quot;')
+                      .replace(/</g, '&lt;')
                       .replace(/>/g, '&gt;');
         }
 
@@ -205,7 +203,7 @@
             mermaidGraphContainer.style.display = 'none';
             reconstructedSentenceTextP.innerHTML = '';
             structuredTextContentDiv.innerHTML = '';
-            mermaidGraphDiv.innerHTML = 'Loading graph...'; // Clear previous graph
+            mermaidGraphDiv.innerHTML = 'Loading graph...'; 
             verbalUnitList.innerHTML = '';
             vuColorMap.clear(); 
             verbalUnitsMap.clear();
@@ -278,12 +276,12 @@
         }
 
 
-        sentenceSelector.addEventListener('change', async function(event) { // Made async for mermaid.render
+        sentenceSelector.addEventListener('change', async function(event) { 
             const selectedSentenceId = event.target.value;
             verbalUnitList.innerHTML = ''; 
             reconstructedSentenceTextP.innerHTML = ''; 
             structuredTextContentDiv.innerHTML = '';
-            mermaidGraphDiv.innerHTML = 'Loading graph...'; // Clear previous graph
+            mermaidGraphDiv.innerHTML = 'Loading graph...'; 
 
             if (!selectedSentenceId) {
                 verbalUnitInfoDiv.style.display = 'none';
@@ -303,7 +301,6 @@
 
             // --- Display Verbal Units ---
             verbalUnitInfoDiv.style.display = 'block';
-            // (verbal unit display logic - unchanged)
             if (allVerbalUnitsData.length === 0) {
                 verbalUnitList.innerHTML = "<li>No verbal unit data loaded.</li>";
             } else if (verbalUnitsInSentence.length === 0) {
@@ -336,31 +333,20 @@
                 });
             }
 
-
-            // --- Common Token Preparation for text displays and graph ---
-            let tokensForSentenceGraph = []; // Use a distinct name, as sorting might differ or filtering later
+            let tokensForSentenceGraph = []; 
             if (allTokensData.length > 0) {
                 const vuidSetForSentence = new Set(
                     verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
                 );
-                if (vuidSetForSentence.size > 0 || allVerbalUnitsData.length === 0) { // if no VUs, process all tokens in sentence
+                if (vuidSetForSentence.size > 0 || allVerbalUnitsData.length === 0) {
                     tokensForSentenceGraph = allTokensData
-                        .filter(token => {
-                            // If VUs exist, token must belong to one of them.
-                            // If no VUs loaded at all, we can't filter by VU, but we still need tokens for *this* sentence.
-                            // This requires tokens to have a 'sentence' field if VUs are missing.
-                            // For now, assume tokens are linked to VUs, and VUs to sentences.
-                            // So if vuidSetForSentence is empty because no VUs for THIS sentence, tokensForSentenceGraph will be empty.
-                            return token.verbalunit && vuidSetForSentence.has(token.verbalunit);
-                        })
-                        .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference)); // Essential for ordered displays
+                        .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
+                        .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
                 }
             }
 
-
             // --- 1. Reconstructed Continuous Sentence Text ---
             sentenceTextDisplayDiv.style.display = 'block';
-            // (continuous text display logic - unchanged, uses tokensForSentenceGraph)
             if (tokensForSentenceGraph.length > 0) {
                 tokensForSentenceGraph.forEach((token, index) => {
                     const tokenSpan = document.createElement('span');
@@ -378,19 +364,15 @@
                 reconstructedSentenceTextP.textContent = "No tokens found for this sentence's verbal units.";
             }
 
-
             // --- 2. Structured Text Layout ---
             structuredTextDisplayContainer.style.display = 'block';
-            // (structured text logic - unchanged, uses tokensForSentenceGraph)
             if (tokensForSentenceGraph.length > 0) {
                 let currentLineElement = null;
                 let previousVerbalUnitId = null; 
                 const indentUnit = '1.5em'; 
-
                 tokensForSentenceGraph.forEach(token => {
                     const currentVerbalUnitId = token.verbalunit;
                     const tokenVU = verbalUnitsMap.get(currentVerbalUnitId);
-
                     if (currentVerbalUnitId !== previousVerbalUnitId) {
                         currentLineElement = document.createElement('div');
                         currentLineElement.className = 'structured-text-line';
@@ -403,7 +385,6 @@
                         structuredTextContentDiv.appendChild(currentLineElement);
                         previousVerbalUnitId = currentVerbalUnitId;
                     }
-
                     if (currentLineElement) {
                         if (currentLineElement.childNodes.length > 0) {
                             currentLineElement.appendChild(document.createTextNode(' '));
@@ -421,27 +402,20 @@
                 structuredTextContentDiv.textContent = "No tokens found to structure.";
             }
 
-
             // --- 3. Mermaid Syntax Graph ---
             mermaidGraphContainer.style.display = 'block';
             if (tokensForSentenceGraph.length > 0) {
-                let mermaidDefinition = "graph TD;\n";
-                const nodesInGraph = new Set(); // Store all node IDs that will appear in this graph
-
-                // First pass: identify all nodes involved in this sentence's graph
+                let mermaidDefinition = "graph BT;\n"; // Changed TD to BU for Bottom-Up
+                const nodesInGraph = new Set();
                 tokensForSentenceGraph.forEach(token => {
                     if (token.reference) nodesInGraph.add(String(token.reference));
                     if (token.node1) nodesInGraph.add(String(token.node1));
                     if (token.node2) nodesInGraph.add(String(token.node2));
                 });
-
-                // Define nodes
                 nodesInGraph.forEach(nodeId => {
-                    const label = globalTokenNodeTextMap.get(nodeId) || `Node ${nodeId}`; // Fallback label
+                    const label = globalTokenNodeTextMap.get(nodeId) || `Node ${nodeId}`;
                     mermaidDefinition += `    ${nodeId}["${escapeMermaidLabel(label)}"];\n`;
                 });
-
-                // Define edges (only from tokens within the current sentence)
                 tokensForSentenceGraph.forEach(token => {
                     const sourceRef = String(token.reference);
                     if (token.node1 && token.node1relation) {
@@ -454,17 +428,13 @@
                     }
                 });
                 
-                // console.log("Mermaid Definition:\n", mermaidDefinition);
                 try {
-                    // Use mermaid.render to get SVG code, then insert it.
-                    // This is more reliable for dynamic updates with newer Mermaid versions.
                     const { svg } = await mermaid.render('mermaidGeneratedGraph', mermaidDefinition);
                     mermaidGraphDiv.innerHTML = svg;
                 } catch (error) {
                     console.error("Mermaid rendering error:", error);
                     mermaidGraphDiv.innerHTML = `<p class="error">Error rendering graph. Check console.</p><pre>${escapeMermaidLabel(mermaidDefinition)}</pre>`;
                 }
-
             } else if (allTokensData.length === 0) {
                 mermaidGraphDiv.innerHTML = "<p>No token data loaded to generate graph.</p>";
             } else {
