@@ -49,30 +49,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        
-        details {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #fff; 
-        }
-        summary {
-            padding: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            background-color: #f8f9fa; 
-            border-bottom: 1px solid #ddd; 
-            border-radius: 4px 4px 0 0; 
-            outline: none; 
-        }
-        details[open] summary {
-             border-bottom: 1px solid #ddd;
-        }
-        details > div { 
-            padding: 10px;
-        }
-
-        #sentenceTextDisplay { 
+        #sentenceTextDisplay, #structuredTextDisplayContainer, #mermaidGraphContainer {
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ddd;
@@ -83,15 +60,14 @@
             word-wrap: break-word;
             line-height: 1.8;
         }
-
         .token-span, .vu-syntactic-type-highlight {
-            padding: 2px 5px;
+            padding: 2px 5px; /* Base padding */
             border-radius: 3px;
             display: inline-block;
             margin-right: 1px;
             margin-bottom: 2px;
             color: #212529;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
         .vu-info-text {
             margin-left: 5px;
@@ -101,29 +77,32 @@
             margin-bottom: 4px;
             line-height: 1.7;
         }
-        #mermaidGraphDetails .mermaid { /* Target mermaid div inside details */
+        #mermaidGraphContainer .mermaid {
             text-align: center;
         }
-        #mermaidGraphDetails .mermaid svg {
+        #mermaidGraphContainer .mermaid svg {
             max-width: 100%;
             height: auto;
         }
         .error { color: red; font-weight: bold; }
         .info { color: green; }
-        .warn { color: orange; font-style: italic; }
+        .warn { color: orange; }
 
-        .token-decoration-unit-verb { border: 1.5px solid #333; }
+        /* --- Token Decoration Classes --- */
+        .token-decoration-unit-verb {
+            border: 1.5px solid #333; /* Darker box */
+        }
         .token-decoration-subject {
             text-decoration: underline;
-            text-decoration-color: #333; 
+            text-decoration-color: #333; /* Match border color for consistency */
             text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px; 
+            text-underline-offset: 3px; /* Give a bit of space */
         }
         .token-decoration-direct-object {
             text-decoration: overline underline;
             text-decoration-color: #333;
             text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px; 
+            text-underline-offset: 3px; /* For underline, overline offset is less controllable directly */
         }
     </style>
 </head>
@@ -152,15 +131,15 @@
             <p id="reconstructedSentenceText"></p>
         </div>
 
-        <details id="structuredTextDetails" style="display: none;">
-            <summary><h3>Structured Layout</h3></summary>
+        <div id="structuredTextDisplayContainer" style="display: none;">
+            <h3>Structured Layout</h3>
             <div id="structuredTextContent"></div>
-        </details>
+        </div>
 
-        <details id="mermaidGraphDetails" style="display: none;">
-            <summary><h3>Syntax Graph (Mermaid - Bottom to Top)</h3></summary>
+        <div id="mermaidGraphContainer" style="display: none;">
+            <h3>Syntax Graph (Mermaid - Bottom to Top)</h3>
             <div class="mermaid" id="mermaidGraph"></div>
-        </details>
+        </div>
     </div>
 
     <script>
@@ -173,18 +152,17 @@
         const statusMessages = document.getElementById('statusMessages');
         const sentenceTextDisplayDiv = document.getElementById('sentenceTextDisplay');
         const reconstructedSentenceTextP = document.getElementById('reconstructedSentenceText');
-        
-        const structuredTextDetails = document.getElementById('structuredTextDetails');
+        const structuredTextDisplayContainer = document.getElementById('structuredTextDisplayContainer');
         const structuredTextContentDiv = document.getElementById('structuredTextContent');
-        const mermaidGraphDetails = document.getElementById('mermaidGraphDetails');
+        const mermaidGraphContainer = document.getElementById('mermaidGraphContainer');
         const mermaidGraphDiv = document.getElementById('mermaidGraph');
 
         let allSentencesData = [];
         let allVerbalUnitsData = [];
         let allTokensData = [];
-        const vuColorMap = new Map();
-        let verbalUnitsMap = new Map();
-        let globalTokenNodeTextMap = new Map();
+        const vuColorMap = new Map(); // Global VU ID -> color map
+        let verbalUnitsMap = new Map(); // Global VUID -> VU object map
+        let globalTokenNodeTextMap = new Map(); // Global Reference ID -> Token Text map
 
         function generatePastelColorHsl() {
             const hue = Math.floor(Math.random() * 360);
@@ -213,7 +191,7 @@
         }
 
         function escapeMermaidLabel(str) {
-             if (typeof str !== 'string') str = String(str);
+            if (typeof str !== 'string') str = String(str);
             return str.replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
         
@@ -244,12 +222,10 @@
             statusMessages.innerHTML = '<p class="info">Loading file...</p>';
             sentenceSelector.innerHTML = '<option value="">-- Loading sentences --</option>';
             sentenceSelector.disabled = true;
-            
             verbalUnitInfoDiv.style.display = 'none';
             sentenceTextDisplayDiv.style.display = 'none';
-            structuredTextDetails.style.display = 'none'; 
-            mermaidGraphDetails.style.display = 'none';   
-
+            structuredTextDisplayContainer.style.display = 'none';
+            mermaidGraphContainer.style.display = 'none';
             reconstructedSentenceTextP.innerHTML = '';
             structuredTextContentDiv.innerHTML = '';
             mermaidGraphDiv.innerHTML = 'Loading graph...'; 
@@ -271,17 +247,17 @@
                     const tokensStr = p.getDelimitedData("tokens");
 
                     if (!sentencesStr) {
-                         statusMessages.innerHTML += '<p class="error">"sentences" block not found in CEX file.</p>';
-                         // sentenceSelector.innerHTML will be handled by populateSentenceSelector
-                    } else {
-                        allSentencesData = parseDelimitedText(sentencesStr);
+                         statusMessages.innerHTML += '<p class="error">"sentences" block not found.</p>';
+                         sentenceSelector.innerHTML = '<option value="">-- No sentences --</option>';
+                         return;
                     }
+                    allSentencesData = parseDelimitedText(sentencesStr);
                     
                     if (verbalUnitsStr) {
                         allVerbalUnitsData = parseDelimitedText(verbalUnitsStr);
                         allVerbalUnitsData.forEach(vu => { if (vu.vuid) verbalUnitsMap.set(vu.vuid, vu); });
                     } else {
-                         statusMessages.innerHTML += '<p class="warn">"verbal_units" block not found. Some features might be limited.</p>';
+                         statusMessages.innerHTML += '<p class="warn">"verbal_units" block not found.</p>';
                     }
 
                     if (tokensStr) {
@@ -292,15 +268,14 @@
                             }
                         });
                     } else {
-                        statusMessages.innerHTML += '<p class="warn">"tokens" block not found. Some features might be limited.</p>';
+                        statusMessages.innerHTML += '<p class="warn">"tokens" block not found.</p>';
                     }
-                    
                     populateSentenceSelector();
                 })
                 .catch(error => {
                     console.error('Failed to load CEX file:', error);
                     statusMessages.innerHTML = `<p class="error">Failed to load or parse CEX file: ${error.message}</p>`;
-                    sentenceSelector.innerHTML = '<option value="">-- Error loading file --</option>';
+                    sentenceSelector.innerHTML = '<option value="">-- Error --</option>';
                 });
         });
 
@@ -308,17 +283,14 @@
             sentenceSelector.innerHTML = '<option value="">-- Select a sentence --</option>';
             if (allSentencesData.length === 0) {
                  sentenceSelector.innerHTML = '<option value="">-- No sentences available --</option>';
-                 sentenceSelector.disabled = true; 
-                 return;
+                 sentenceSelector.disabled = true; return;
             }
             allSentencesData.forEach(sentenceObj => {
-                if (sentenceObj.sentence) { 
+                if (sentenceObj.sentence) {
                     const option = document.createElement('option');
                     option.value = sentenceObj.sentence;
                     option.textContent = sentenceObj.sentence;
                     sentenceSelector.appendChild(option);
-                } else {
-                    console.warn("Found sentence object without a 'sentence' property:", sentenceObj);
                 }
             });
             sentenceSelector.disabled = false;
@@ -326,7 +298,6 @@
 
         sentenceSelector.addEventListener('change', async function(event) { 
             const selectedSentenceId = event.target.value;
-            
             verbalUnitList.innerHTML = ''; 
             reconstructedSentenceTextP.innerHTML = ''; 
             structuredTextContentDiv.innerHTML = '';
@@ -335,19 +306,13 @@
             if (!selectedSentenceId) {
                 verbalUnitInfoDiv.style.display = 'none';
                 sentenceTextDisplayDiv.style.display = 'none';
-                structuredTextDetails.style.display = 'none';
-                mermaidGraphDetails.style.display = 'none';
-                structuredTextDetails.removeAttribute('open');
-                mermaidGraphDetails.removeAttribute('open');
+                structuredTextDisplayContainer.style.display = 'none';
+                mermaidGraphContainer.style.display = 'none';
                 return;
             }
             
-            verbalUnitInfoDiv.style.display = 'block';
-            sentenceTextDisplayDiv.style.display = 'block';
-            structuredTextDetails.style.display = 'block';
-            mermaidGraphDetails.style.display = 'block';
-
             const verbalUnitsInSentence = allVerbalUnitsData.filter(vu => vu.sentence === selectedSentenceId);
+            
             const currentSentenceVuColorMap = new Map(); 
             verbalUnitsInSentence.forEach(vu => {
                 if (vu.vuid) {
@@ -358,8 +323,9 @@
                 }
             });
 
-            if (allVerbalUnitsData.length === 0 && verbalUnitsInSentence.length === 0) {
-                verbalUnitList.innerHTML = "<li>No verbal unit data loaded from file.</li>";
+            verbalUnitInfoDiv.style.display = 'block';
+            if (allVerbalUnitsData.length === 0) {
+                verbalUnitList.innerHTML = "<li>No verbal unit data loaded.</li>";
             } else if (verbalUnitsInSentence.length === 0) {
                 verbalUnitList.innerHTML = `<li>No verbal units found for sentence ${selectedSentenceId}.</li>`;
             } else {
@@ -381,8 +347,6 @@
                     if (allTokensData.length > 0) {
                         const tokenCount = allTokensData.filter(token => token.verbalunit === vu.vuid).length;
                         additionalText += `${vu.vuid ? ', ' : ''}Tokens: ${tokenCount}`;
-                    } else if (allTokensData.length === 0 && verbalUnitsInSentence.length > 0){
-                        additionalText += `${vu.vuid ? ', ' : ''}Tokens: N/A (no token data)`;
                     }
                     if(additionalText) additionalInfoSpan.textContent = `- ${additionalText}`;
                     li.appendChild(additionalInfoSpan);
@@ -391,23 +355,21 @@
             }
 
             let tokensForTextDisplays = []; 
-            let tokensForGraphSource = []; 
+            let tokensForGraphSource = []; // Tokens from the current sentence that define graph edges
 
             if (allTokensData.length > 0) {
                 const vuidSetForSentence = new Set(
                     verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
                 );
-                if (vuidSetForSentence.size > 0) { 
-                    const sentenceTokens = allTokensData
-                        .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
-                        .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
-                    tokensForTextDisplays = [...sentenceTokens]; 
-                    tokensForGraphSource = [...sentenceTokens];  
-                }
+                const sentenceTokens = allTokensData
+                    .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
+                    .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
+                tokensForTextDisplays = [...sentenceTokens]; 
+                tokensForGraphSource = [...sentenceTokens];  
             }
 
+            sentenceTextDisplayDiv.style.display = 'block';
             if (tokensForTextDisplays.length > 0) {
-                reconstructedSentenceTextP.innerHTML = ''; 
                 tokensForTextDisplays.forEach((token, index) => {
                     const tokenSpan = document.createElement('span');
                     styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap);
@@ -417,11 +379,11 @@
                     }
                 });
             } else {
-                reconstructedSentenceTextP.textContent = (allTokensData.length === 0 && allVerbalUnitsData.length === 0) ? "No token or verbal unit data loaded." : "No tokens found for this sentence's verbal units.";
+                reconstructedSentenceTextP.textContent = allTokensData.length === 0 ? "No token data loaded." : "No tokens for this sentence.";
             }
 
+            structuredTextDisplayContainer.style.display = 'block';
             if (tokensForTextDisplays.length > 0) {
-                structuredTextContentDiv.innerHTML = ''; 
                 let currentLineElement = null;
                 let previousVerbalUnitId = null; 
                 const indentUnit = '1.5em'; 
@@ -450,11 +412,11 @@
                     }
                 });
             } else {
-                 structuredTextContentDiv.textContent = (allTokensData.length === 0 && allVerbalUnitsData.length === 0) ? "No token or verbal unit data loaded." : "No tokens found to structure for this sentence.";
+                structuredTextContentDiv.textContent = allTokensData.length === 0 ? "No token data loaded." : "No tokens for this sentence.";
             }
 
+            mermaidGraphContainer.style.display = 'block';
             if (tokensForGraphSource.length > 0) {
-                mermaidGraphDiv.innerHTML = ''; 
                 let mermaidDefinition = "graph BT;\n";
                 const nodesInGraph = new Set();
                 tokensForGraphSource.forEach(token => {
@@ -479,16 +441,14 @@
                 });
                 
                 try {
-                    // Ensure a unique ID for each render if multiple graphs could exist or are re-rendered often
-                    const graphId = 'mermaidGeneratedGraph-' + selectedSentenceId.replace(/[^a-zA-Z0-9]/g, "_");
-                    const { svg } = await mermaid.render(graphId, mermaidDefinition);
+                    const { svg } = await mermaid.render('mermaidGeneratedGraph', mermaidDefinition);
                     mermaidGraphDiv.innerHTML = svg;
                 } catch (error) {
                     console.error("Mermaid rendering error:", error);
                     mermaidGraphDiv.innerHTML = `<p class="error">Error rendering graph. Check console.</p><pre>${escapeMermaidLabel(mermaidDefinition)}</pre>`;
                 }
             } else {
-                mermaidGraphDiv.innerHTML = (allTokensData.length === 0 && allVerbalUnitsData.length === 0) ? "<p>No token or verbal unit data loaded to generate graph.</p>" : "<p>No tokens found for this sentence to generate graph.</p>";
+                mermaidGraphDiv.innerHTML = allTokensData.length === 0 ? "<p>No token data loaded.</p>" : "<p>No tokens for graph.</p>";
             }
         });
     </script>

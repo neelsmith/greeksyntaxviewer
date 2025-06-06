@@ -60,3 +60,11 @@ Excellent. A couple of tweaks: 1) in the two displays that highlight tokens by v
 ---
 
 The display is good in both the section labelled "Verbal Units" and the "Structured Layout" section, but the Syntax Graph has disappeared! That should not have been changed at all. Could you revert that part of the app so that the Mermaid diagram is restored?
+
+---
+
+Excellent! Here's one further refinement. I would like to put each of the two sections labelled "Structured Layout" and "Syntax Graph  (Mermaid - Bottom to Top") in foldable sections, so that the Verbal Units section would *always* be displayed, but the user could show or hide the "Structured Layout" and "Syntax Graph" sections?
+
+---
+
+Oops. Now the menu to choose sentences is empty so we can't even start!
