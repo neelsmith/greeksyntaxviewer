@@ -59,3 +59,15 @@ Super. Let's add an additional further display. We'll use the `text` value of ea
 ---
 
 Now one further display visualizing the syntax as a Mermaid visualization of a bottom-up directed graph. Relations among nodes are defined by  columns in the tokens table. `reference` identifies a node; use its `text` column as the label for the node with a given `reference` value.  Use `node1relation` as the label for an edge between `reference` and `node1`; use `node2relation` as the label for an edge between `reference` and `node2`. 
+
+---
+
+Gorgeous! That's all the key functionality! Now tweaking the display:  I would like to put each of the two sections labelled "Sentence Text (Structured by Verbal Unit Depth):" and "Syntax Graph (Mermaid): in foldable sections, so that the Verbal Units section would *always* be displayed, but the user could show or hide the "Structured Layout" and "Syntax Graph" sections. Immediately above the "Sentence Text (Continuous):" I'd like to add a further collapsible section, titled "Key". Its header should be smaller than the other sections. The conents of the seciton should list three pieces of information, namely:
+
+- *boxes* == verb forms
+- *underscore* == subject of verb
+- *underscore + overline* == direct object
+
+---
+
+Perfect. Let's make the "Key" section foldable, too.

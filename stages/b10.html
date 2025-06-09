@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greek Syntax Viewer</title> <!-- CHANGED HERE -->
+    <title>Greek Syntax Annotations Viewer</title>
     <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
@@ -166,7 +166,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Greek Syntax Viewer</h1> <!-- CHANGED HERE -->
+        <h1>Greek Syntax Data Loader</h1>
         <label for="fileInput">Choose a CEX file:</label>
         <input type="file" id="fileInput" accept=".cex">
 
@@ -178,7 +178,7 @@
 
         <!-- Key Section - Collapsible -->
         <div id="keySection" style="display: none;">
-            <details> 
+            <details> <!-- <<<<<<<<<<<<<<<<< 'open' attribute REMOVED HERE <<<<<<<<<<<<<<<<< -->
                 <summary><h3>Key</h3></summary>
                 <div class="details-content">
                     <ul>
@@ -193,7 +193,7 @@
         <!-- Sentence Text (Continuous) - Always Visible Content Area when data is loaded -->
         <div id="sentenceDisplaySection" style="display: none;">
             <h2>Sentence Text (Continuous):</h2>
-            <div id="sentenceTextDisplay" class="details-content"> 
+            <div id="sentenceTextDisplay" class="details-content"> <!-- Re-using .details-content for padding -->
                 <!-- Tokens will be rendered here -->
             </div>
         </div>
