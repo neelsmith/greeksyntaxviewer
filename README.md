@@ -1,4 +1,4 @@
-# Greek syntax viewer
+# Greek syntax viewer, version `1.1.0`.
 
 
 > *A vibe-coded single-page web app to visualize syntactic annotations created with this [`greeksyntaxannotator`](https://github.com/neelsmith/greeksyntaxannotator)*.
@@ -8,9 +8,8 @@
 
 There is a user's guide in [`guide.md`](./guide.md)
 
-## Status
+## Main features
 
-Version: `1.1.0`. Its main features are:
 
 - load annotations created with [`greeksyntaxannotator`](https://github.com/neelsmith/greeksyntaxannotator) from a local text file
 - text display is color code by verbal construction words belong to 
