@@ -1,174 +1,9 @@
-
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-							<style>
-								body {
-									background-color: white; /* Ensure the iframe has a white background */
-								}
-
-								
-        body {
-            font-family: sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px; 
-        }
-        h1, h2 { /* Base for main section titles */
-            color: #555;
-            margin-top: 25px; /* More space before main sections */
-            margin-bottom: 10px;
-        }
-        h1:first-child, h2:first-child {
-            margin-top: 0;
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input[type="file"] {
-            padding: 8px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #selectedSentenceDisplay {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #e9e9e9;
-            border-left: 5px solid #007bff;
-            font-style: italic;
-            margin-bottom: 20px;
-        }
-
-        /* Collapsible Section Styling */
-        details {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            background-color: #fff; /* Give details a background for content */
-        }
-        summary {
-            padding: 10px 15px;
-            background-color: #f9f9f9;
-            border-bottom: 1px solid #ddd; /* Separator for summary */
-            cursor: pointer;
-            list-style: none; /* Remove default marker */
-            font-weight: bold;
-            color: #444;
-        }
-        summary::-webkit-details-marker { display: none; } /* Chrome/Safari */
-        summary::marker { display: none; } /* Firefox */
-        summary:hover { background-color: #f0f0f0; }
-        
-        details summary h2, details summary h3 {
-            display: inline; /* Keep marker (if any) or custom arrow on same line */
-            margin: 0;
-            font-size: 1.2em; /* Default for h2 in summary */
-            color: #555;
-        }
-        /* Key section specific header */
-        #keySection details summary h3 {
-            font-size: 1.0em; /* Smaller header for "Key" */
-            font-weight: bold;
-            color: #666;
-        }
-        .details-content {
-            padding: 15px;
-        }
-        #keySection .details-content ul {
-            padding-left: 20px;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-        #keySection .details-content li {
-            margin-bottom: 3px;
-        }
-
-
-        #verbalUnitsDisplay ul {
-            list-style-type: none;
-            padding: 0;
-            background-color: white; 
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding:10px;
-        }
-        #verbalUnitsDisplay li {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 5px;
-        }
-        #verbalUnitsDisplay li:last-child {
-            border-bottom: none;
-        }
-        .syntactic-type {
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-weight: bold;
-            color: #000;
-        }
-        #sentenceTextDisplay {
-            line-height: 2.2; 
-            word-spacing: 2px;
-        }
-        #structuredTokenDisplay {
-            font-size: 1em; 
-        }
-        .structured-token-line {
-            margin-bottom: 4px; 
-            line-height: 1.8; 
-        }
-        .token-span {
-            padding: 3px 5px; 
-            margin-bottom: 5px; 
-            display: inline-block; 
-            border-radius: 3px;
-            color: #000; 
-            position: relative; 
-        }
-        .token-unit-verb { border: 1.5px solid #444; }
-        .token-subject {
-            text-decoration: underline;
-            text-decoration-color: #333;
-            text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px;
-        }
-        .token-direct-object-predicate {
-            text-decoration: underline overline;
-            text-decoration-color: #333;
-            text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px;
-        }
-        #mermaidGraphContainer svg { 
-            max-width: 100%;
-            height: auto;
-        }
-        .error { color: red; font-weight: bold; }
-    
-
-							</style>
-                        </head>
-                        <body>
-                            <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greek Syntax Viewer</title>
+    <title>Greek Syntax Viewer</title> <!-- CHANGED HERE -->
     <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
@@ -223,6 +58,9 @@
             margin-bottom: 15px;
             background-color: #fff; /* Give details a background for content */
         }
+        details[open] {
+            /* Optional: slightly more emphasis when open */
+        }
         summary {
             padding: 10px 15px;
             background-color: #f9f9f9;
@@ -264,7 +102,7 @@
         #verbalUnitsDisplay ul {
             list-style-type: none;
             padding: 0;
-            background-color: white; 
+            background-color: white; /* Ensure VU list has white BG */
             border: 1px solid #ddd;
             border-radius: 4px;
             padding:10px;
@@ -282,6 +120,10 @@
             border-radius: 3px;
             font-weight: bold;
             color: #000;
+        }
+        #sentenceTextDisplay, #structuredTokenDisplay, #mermaidGraphContainer {
+            /* These are now inside .details-content, so direct background/padding might not be needed
+               unless .details-content doesn't provide it */
         }
         #sentenceTextDisplay {
             line-height: 2.2; 
@@ -324,7 +166,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Greek Syntax Viewer</h1>
+        <h1>Greek Syntax Viewer</h1> <!-- CHANGED HERE -->
         <label for="fileInput">Choose a CEX file:</label>
         <input type="file" id="fileInput" accept=".cex">
 
@@ -334,6 +176,7 @@
             <div id="selectedSentenceDisplay"></div>
         </div>
 
+        <!-- Key Section - Collapsible -->
         <div id="keySection" style="display: none;">
             <details> 
                 <summary><h3>Key</h3></summary>
@@ -347,29 +190,36 @@
             </details>
         </div>
 
+        <!-- Sentence Text (Continuous) - Always Visible Content Area when data is loaded -->
         <div id="sentenceDisplaySection" style="display: none;">
             <h2>Sentence Text (Continuous):</h2>
             <div id="sentenceTextDisplay" class="details-content"> 
+                <!-- Tokens will be rendered here -->
             </div>
         </div>
 
+        <!-- Verbal Units Section - Always Visible Content Area when data is loaded -->
         <div id="verbalUnitsSection" style="display: none;">
             <h2>Verbal Units in Selected Sentence:</h2>
             <div id="verbalUnitsDisplay"><ul></ul></div>
         </div>
 
+        <!-- Structured Layout - Collapsible -->
         <div id="structuredDisplaySection" style="display: none;">
             <details>
                 <summary><h2>Sentence Text (Structured by Verbal Unit Depth)</h2></summary>
                 <div id="structuredTokenDisplay" class="details-content">
+                    <!-- Structured tokens will be rendered here -->
                 </div>
             </details>
         </div>
 
+        <!-- Mermaid Graph - Collapsible -->
         <div id="mermaidDisplaySection" style="display: none;">
             <details>
                 <summary><h2>Syntax Graph (Mermaid)</h2></summary>
                 <div id="mermaidGraphContainer" class="mermaid details-content">
+                    <!-- Mermaid graph will be rendered here -->
                 </div>
             </details>
         </div>
@@ -503,7 +353,7 @@
                 verbalUnitsDisplayUl.innerHTML = '<li>No VUs.</li>';
                 sentenceTextDisplay.innerHTML = noVuMsg;
                 structuredTokenDisplay.innerHTML = noVuMsg;
-                mermaidGraphContainer.innerHTML = noVuMsg; // Show message in graph area too
+                mermaidGraphContainer.innerHTML = noVuMsg;
                 return;
             }
 
@@ -519,11 +369,9 @@
             let sentToks = parsedTokens.filter(t => vuIdsInSent.has(t.vu)).sort((a,b)=>{const rA=parseInt(a.ref,10),rB=parseInt(b.ref,10);if(isNaN(rA)&&isNaN(rB))return 0;if(isNaN(rA))return 1;if(isNaN(rB))return -1;return rA-rB;});
 
             if (sentToks.length > 0) {
-                // Continuous Sentence Display
                 sentToks.forEach(t => { sentenceTextDisplay.appendChild(_createTokenSpan(t, VUsInSent)); sentenceTextDisplay.appendChild(document.createTextNode(' ')); });
                 if (sentenceTextDisplay.lastChild && sentenceTextDisplay.lastChild.nodeType === Node.TEXT_NODE) sentenceTextDisplay.removeChild(sentenceTextDisplay.lastChild);
                 
-                // Structured Token Display
                 let curVUID = null, curLineDiv = null; const indentPx = 20;
                 sentToks.forEach(t => {
                     if (t.vu !== curVUID) {
@@ -535,9 +383,7 @@
                     if (curLineDiv) { if (curLineDiv.hasChildNodes()) curLineDiv.appendChild(document.createTextNode(' ')); curLineDiv.appendChild(_createTokenSpan(t, VUsInSent)); }
                 });
 
-                // Mermaid Graph Display (always BT)
-                const mermaidDef = ['graph BT;']; 
-                const validNodeRefs = new Set(sentToks.map(t => t.ref));
+                const mermaidDef = ['graph BT;']; const validNodeRefs = new Set(sentToks.map(t => t.ref));
                 sentToks.forEach(t => mermaidDef.push(`${t.ref}["${escapeMermaidLabel(t.txt)}"];`));
                 sentToks.forEach(t => {
                     if (t.n1 && validNodeRefs.has(t.n1) && t.n1r) mermaidDef.push(`${t.n1} -- "${escapeMermaidLabel(t.n1r)}" --> ${t.ref};`);
@@ -562,195 +408,3 @@
     </script>
 </body>
 </html>
-
-
-
-							<script>
-                            	
-        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
-
-        let parsedSentences = [], parsedVerbalUnits = [], parsedTokens = [];
-        const PASTEL_COLORS = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "#E0BBE4", "#FFDAC1", "#B5EAD7", "#F9C7CF", "#C7CEEA"];
-
-        const fileInput = document.getElementById('fileInput');
-        const sentenceSelector = document.getElementById('sentenceSelector');
-        const selectedSentenceDisplay = document.getElementById('selectedSentenceDisplay');
-        const verbalUnitsDisplayUl = document.querySelector('#verbalUnitsDisplay ul');
-        
-        const sentenceSection = document.getElementById('sentenceSection');
-        const keySection = document.getElementById('keySection'); 
-        const sentenceDisplaySection = document.getElementById('sentenceDisplaySection');
-        const verbalUnitsSection = document.getElementById('verbalUnitsSection');
-        const structuredDisplaySection = document.getElementById('structuredDisplaySection');
-        const mermaidDisplaySection = document.getElementById('mermaidDisplaySection');
-        
-        const sentenceTextDisplay = document.getElementById('sentenceTextDisplay');
-        const structuredTokenDisplay = document.getElementById('structuredTokenDisplay');
-        const mermaidGraphContainer = document.getElementById('mermaidGraphContainer');
-        const statusMessages = document.getElementById('statusMessages');
-
-        const allDataDisplaySections = [
-            sentenceSection, keySection, sentenceDisplaySection, verbalUnitsSection, 
-            structuredDisplaySection, mermaidDisplaySection
-        ];
-
-        fileInput.addEventListener('change', handleFileSelect);
-        sentenceSelector.addEventListener('change', handleSentenceSelection);
-
-        function displayError(message) { statusMessages.innerHTML = `<p class="error">${message}</p>`; console.error(message); }
-        function displayStatus(message) { statusMessages.innerHTML = `<p>${message}</p>`; console.log(message); }
-
-        function clearPreviousData() {
-            parsedSentences = []; parsedVerbalUnits = []; parsedTokens = [];
-            sentenceSelector.innerHTML = '<option value="">-- Load a file --</option>';
-            selectedSentenceDisplay.textContent = '';
-            verbalUnitsDisplayUl.innerHTML = '';
-            sentenceTextDisplay.innerHTML = '';
-            structuredTokenDisplay.innerHTML = '';
-            mermaidGraphContainer.innerHTML = ''; 
-            mermaidGraphContainer.removeAttribute('data-processed');
-
-            allDataDisplaySections.forEach(section => section.style.display = 'none');
-            statusMessages.innerHTML = '';
-        }
-
-        function handleFileSelect(event) {
-            clearPreviousData();
-            const file = event.target.files[0];
-            if (!file) { displayError('No file selected.'); return; }
-            displayStatus(`Loading ${file.name}...`);
-            const parser = new CEXParser();
-            parser.loadFromFile(file)
-                .then(p => {
-                    displayStatus('CEX data loaded! Processing...');
-                    const sentencesStr = p.getDelimitedData("sentences");
-                    const verbalUnitsStr = p.getDelimitedData("verbal_units");
-                    const tokensStr = p.getDelimitedData("tokens");
-
-                    if (!sentencesStr || !verbalUnitsStr || !tokensStr) { displayError('Required data blocks missing.'); return; }
-
-                    const sLines = sentencesStr.trim().split('\n');
-                    parsedSentences = sLines.length > 1 ? sLines.slice(1).map(l => ({ id: l.split('|')[0], s: l.split('|')[1], c: l.split('|')[2] })).filter(s => s.id && s.id.trim()) : [];
-                    const vuLines = verbalUnitsStr.trim().split('\n');
-                    parsedVerbalUnits = vuLines.length > 1 ? vuLines.slice(1).map(l => { const ps = l.split('|'); return { vuid: ps[0], st: ps[1], sem: ps[2], depth: ps[3], sent: ps[4] }; }).filter(vu => vu.vuid && vu.vuid.trim() && vu.sent && vu.sent.trim()) : [];
-                    const tLines = tokensStr.trim().split('\n');
-                    parsedTokens = tLines.length > 1 ? tLines.slice(1).map(l => { const ps = l.split('|'); return { u: ps[0], ref: ps[1], tt: ps[2], txt: ps[3], vu: ps[4], n1: ps[5], n1r: (ps[6] || "").trim(), n2: ps[7], n2r: (ps[8] || "").trim() }; }).filter(t => t.u && t.u.trim() && t.vu && t.vu.trim()) : [];
-                    
-                    if (parsedVerbalUnits.length === 0) { displayError(`No valid VUs. ${vuLines.length <=1 && verbalUnitsStr.trim() ? 'Block empty/header.' : ''}`); return; }
-                    if (parsedSentences.length === 0 && sLines.length > 1) displayStatus('Warning: Sentences block empty/header.');
-                    
-                    populateSentenceSelector();
-                    sentenceSection.style.display = 'block'; 
-                    displayStatus(`Processed ${file.name}. Select sentence.`);
-                })
-                .catch(e => { displayError(`File error: ${e.message}`); console.error('Err:', e); });
-        }
-
-        function populateSentenceSelector() {
-            sentenceSelector.innerHTML = '<option value="">-- Select --</option>'; 
-            const vuSents = new Set(parsedVerbalUnits.map(vu => vu.sent));
-            const sIds = new Set(parsedSentences.map(s => s.id));
-            const dispIds = [...sIds].filter(id => vuSents.has(id)).sort((a,b)=>{const nA=parseInt(a.match(/\d+$/)?.[0]||a),nB=parseInt(b.match(/\d+$/)?.[0]||b);return(!isNaN(nA)&&!isNaN(nB))?nA-nB:a.localeCompare(b);});
-            if(dispIds.length===0){sentenceSelector.innerHTML='<option value="">-- No Sents w/VUs --</option>';displayStatus('Info: No sentences found with VUs.');return;}
-            dispIds.forEach(id=>sentenceSelector.add(new Option(id,id)));
-        }
-
-        function escapeMermaidLabel(text) { return text ? text.replace(/"/g, '#quot;') : ""; }
-
-        function _createTokenSpan(token, VUsInSent) {
-            const span = document.createElement('span');
-            span.className = 'token-span'; span.textContent = token.txt;
-            const vu = VUsInSent.find(v => v.vuid === token.vu);
-            if (vu && vu.dispClr) span.style.backgroundColor = vu.dispClr; else { span.style.backgroundColor = '#eee'; span.style.color = '#555'; }
-            if (token.n1r === 'unit verb') span.classList.add('token-unit-verb');
-            if (token.n1r === 'subject') span.classList.add('token-subject');
-            if (token.n1r === 'direct object' || token.n1r === 'predicate') span.classList.add('token-direct-object-predicate');
-            return span;
-        }
-
-        async function handleSentenceSelection(event) {
-            const selSentId = event.target.value;
-            verbalUnitsDisplayUl.innerHTML = ''; sentenceTextDisplay.innerHTML = ''; structuredTokenDisplay.innerHTML = '';
-            mermaidGraphContainer.innerHTML = ''; mermaidGraphContainer.removeAttribute('data-processed');
-
-            [keySection, sentenceDisplaySection, verbalUnitsSection, structuredDisplaySection, mermaidDisplaySection].forEach(s => s.style.display = 'none');
-            
-            if (!selSentId) { selectedSentenceDisplay.textContent = ''; return; }
-            selectedSentenceDisplay.textContent = `Data for sentence: ${selSentId}`;
-            
-            keySection.style.display = 'block';
-            sentenceDisplaySection.style.display = 'block';
-            verbalUnitsSection.style.display = 'block';
-            structuredDisplaySection.style.display = 'block'; 
-            mermaidDisplaySection.style.display = 'block';   
-
-            let locClrIdx = 0; 
-            const VUsInSent = parsedVerbalUnits.filter(vu => vu.sent === selSentId).map(vo => ({ ...vo, dispClr: PASTEL_COLORS[locClrIdx++ % PASTEL_COLORS.length] }));
-            
-            if (VUsInSent.length === 0) {
-                const noVuMsg = '<em>No VUs, so no tokens.</em>';
-                verbalUnitsDisplayUl.innerHTML = '<li>No VUs.</li>';
-                sentenceTextDisplay.innerHTML = noVuMsg;
-                structuredTokenDisplay.innerHTML = noVuMsg;
-                mermaidGraphContainer.innerHTML = noVuMsg; // Show message in graph area too
-                return;
-            }
-
-            VUsInSent.forEach(vu => {
-                const tc = parsedTokens.filter(t => t.vu === vu.vuid).length;
-                const li = document.createElement('li'); const ss = document.createElement('span');
-                ss.className = 'syntactic-type'; ss.style.backgroundColor = vu.dispClr; ss.textContent = vu.st;
-                li.appendChild(ss); li.innerHTML += ` (${vu.sem || 'N/A'}) - Tokens: ${tc}`;
-                verbalUnitsDisplayUl.appendChild(li);
-            });
-
-            const vuIdsInSent = new Set(VUsInSent.map(vu => vu.vuid));
-            let sentToks = parsedTokens.filter(t => vuIdsInSent.has(t.vu)).sort((a,b)=>{const rA=parseInt(a.ref,10),rB=parseInt(b.ref,10);if(isNaN(rA)&&isNaN(rB))return 0;if(isNaN(rA))return 1;if(isNaN(rB))return -1;return rA-rB;});
-
-            if (sentToks.length > 0) {
-                // Continuous Sentence Display
-                sentToks.forEach(t => { sentenceTextDisplay.appendChild(_createTokenSpan(t, VUsInSent)); sentenceTextDisplay.appendChild(document.createTextNode(' ')); });
-                if (sentenceTextDisplay.lastChild && sentenceTextDisplay.lastChild.nodeType === Node.TEXT_NODE) sentenceTextDisplay.removeChild(sentenceTextDisplay.lastChild);
-                
-                // Structured Token Display
-                let curVUID = null, curLineDiv = null; const indentPx = 20;
-                sentToks.forEach(t => {
-                    if (t.vu !== curVUID) {
-                        curVUID = t.vu; curLineDiv = document.createElement('div'); curLineDiv.className = 'structured-token-line';
-                        const pVU = VUsInSent.find(v => v.vuid === curVUID);
-                        if(pVU){const d=parseInt(pVU.depth,10)||1;curLineDiv.style.paddingLeft=`${Math.max(0,d-1)*indentPx}px`;}
-                        structuredTokenDisplay.appendChild(curLineDiv);
-                    }
-                    if (curLineDiv) { if (curLineDiv.hasChildNodes()) curLineDiv.appendChild(document.createTextNode(' ')); curLineDiv.appendChild(_createTokenSpan(t, VUsInSent)); }
-                });
-
-                // Mermaid Graph Display (always BT)
-                const mermaidDef = ['graph BT;']; 
-                const validNodeRefs = new Set(sentToks.map(t => t.ref));
-                sentToks.forEach(t => mermaidDef.push(`${t.ref}["${escapeMermaidLabel(t.txt)}"];`));
-                sentToks.forEach(t => {
-                    if (t.n1 && validNodeRefs.has(t.n1) && t.n1r) mermaidDef.push(`${t.n1} -- "${escapeMermaidLabel(t.n1r)}" --> ${t.ref};`);
-                    if (t.n2 && validNodeRefs.has(t.n2) && t.n2r) mermaidDef.push(`${t.n2} -- "${escapeMermaidLabel(t.n2r)}" --> ${t.ref};`);
-                });
-                const mermaidString = mermaidDef.join('\n');
-                try {
-                    const { svg, bindFunctions } = await mermaid.render('mermaid-graph-' + Date.now(), mermaidString);
-                    mermaidGraphContainer.innerHTML = svg;
-                    if (bindFunctions) bindFunctions(mermaidGraphContainer);
-                } catch (e) {
-                    mermaidGraphContainer.innerHTML = `<p class="error">Mermaid error: ${e.message}</p><pre>${mermaidString}</pre>`;
-                    console.error("Mermaid err:", e, "\nDef:\n", mermaidString);
-                }
-            } else {
-                const noTokenMsg = '<em>No tokens for VUs in this sentence.</em>';
-                sentenceTextDisplay.innerHTML = noTokenMsg;
-                structuredTokenDisplay.innerHTML = noTokenMsg;
-                mermaidGraphContainer.innerHTML = noTokenMsg;
-            }
-        }
-    
-
-							</script>
-                        </body>
-                        </html>
-                    
