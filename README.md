@@ -1,4 +1,4 @@
-# Greek syntax viewer, version `1.1.0`
+# Greek syntax viewer, version `1.2.0`
 
 
 > *A vibe-coded single-page web app to visualize syntactic annotations created with this [`greeksyntaxannotator`](https://github.com/neelsmith/greeksyntaxannotator)*.
@@ -15,6 +15,7 @@
 - highlighting identifies subject, verb and object (if any) in each verbal unit
 - optionally display text indented to show subordination
 - optionally visualize a diagram of syntactic relations as a directed graph 
+- download syntax diagram as a PNG file
 
 ## Caveats
 
