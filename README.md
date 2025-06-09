@@ -10,7 +10,7 @@ There is a user's guide in [`guide.md`](./guide.md)
 
 ## Status
 
-Version 1.0.0 is an intitial release. Its main features are:
+Version: `1.1.0`. Its main features are:
 
 - load annotations created with [`greeksyntaxannotator`](https://github.com/neelsmith/greeksyntaxannotator) from a local text file
 - text display is color code by verbal construction words belong to 
