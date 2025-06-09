@@ -6,7 +6,6 @@
 
 `syntaxviewer.html` is an app for visualizing syntactically annotated Greek texts. 
 
-There is a user's guide in [`guide.md`](./guide.md)
 
 ## Main features
 
