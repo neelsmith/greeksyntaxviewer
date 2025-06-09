@@ -17,14 +17,9 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px; /* Space for content below */
         }
         h1, h2 {
             color: #555;
-            margin-top: 20px;
-        }
-        h1:first-child, h2:first-child {
-            margin-top: 0;
         }
         label {
             display: block;
@@ -65,56 +60,37 @@
             font-weight: bold;
             color: #000; /* Text color set to black */
         }
-
-        /* Continuous Sentence Display */
         #sentenceTextDisplay {
             background-color: white;
             padding: 15px;
             margin-top: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            line-height: 2.2; 
-            word-spacing: 2px;
+            line-height: 2.2; /* Increased line-height for readability of tokens & decorations */
+            word-spacing: 2px; /* Add a bit more space between token-spans */
         }
-
-        /* Structured Token Display */
-        #structuredTokenDisplay {
-            background-color: white; /* Keep consistent with other display */
-            padding: 15px;
-            margin-top: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1em; 
-        }
-        .structured-token-line {
-            margin-bottom: 4px; /* Space between lines of VUs */
-            line-height: 1.8; /* Adjust for readability within a line */
-        }
-
-        /* Common Token Span Styling */
         .token-span {
-            padding: 3px 5px; 
-            /* margin-right: 3px; Removed, as we'll add explicit spaces */
-            margin-bottom: 5px; 
+            padding: 3px 5px; /* Slightly more padding for decorations */
+            margin-right: 3px; 
+            margin-bottom: 5px; /* For wrapped lines and decorations */
             display: inline-block; 
             border-radius: 3px;
-            color: #000; 
-            position: relative; 
+            color: #000; /* Black text for tokens */
+            position: relative; /* For potential future absolute positioning of complex decorations */
         }
         .token-unit-verb {
             border: 1.5px solid #444;
+            /* Adjust padding slightly if border makes it too tight, but original padding should be okay */
         }
         .token-subject {
             text-decoration: underline;
             text-decoration-color: #333;
             text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px; /* Improve underline position */
         }
         .token-direct-object-predicate {
             text-decoration: underline overline;
             text-decoration-color: #333;
             text-decoration-thickness: 1.5px;
-            text-underline-offset: 3px; /* Improve underline position */
         }
         .error {
             color: red;
@@ -143,19 +119,18 @@
         </div>
 
         <div id="sentenceDisplaySection" style="display: none;">
-            <h2>Sentence Text (Continuous):</h2>
-            <div id="sentenceTextDisplay"></div>
-        </div>
-
-        <div id="structuredDisplaySection" style="display: none;">
-            <h2>Sentence Text (Structured by Verbal Unit Depth):</h2>
-            <div id="structuredTokenDisplay"></div>
+            <h2>Sentence Text (with token decorations):</h2>
+            <div id="sentenceTextDisplay">
+                <!-- Tokens will be rendered here -->
+            </div>
         </div>
         
         <div id="statusMessages"></div>
+
     </div>
 
     <script>
+        // Global storage for parsed data
         let parsedSentences = [];
         let parsedVerbalUnits = [];
         let parsedTokens = [];
@@ -164,6 +139,7 @@
             "#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF",
             "#E0BBE4", "#FFDAC1", "#B5EAD7", "#F9C7CF", "#C7CEEA"
         ];
+        // No need for globalColorIndex if localColorIndex is reset per sentence selection
 
         const fileInput = document.getElementById('fileInput');
         const sentenceSelector = document.getElementById('sentenceSelector');
@@ -171,13 +147,8 @@
         const verbalUnitsDisplayUl = document.querySelector('#verbalUnitsDisplay ul');
         const sentenceSection = document.getElementById('sentenceSection');
         const verbalUnitsSection = document.getElementById('verbalUnitsSection');
-        
         const sentenceDisplaySection = document.getElementById('sentenceDisplaySection');
         const sentenceTextDisplay = document.getElementById('sentenceTextDisplay');
-        
-        const structuredDisplaySection = document.getElementById('structuredDisplaySection');
-        const structuredTokenDisplay = document.getElementById('structuredTokenDisplay');
-        
         const statusMessages = document.getElementById('statusMessages');
 
         fileInput.addEventListener('change', handleFileSelect);
@@ -201,12 +172,9 @@
             selectedSentenceDisplay.textContent = '';
             verbalUnitsDisplayUl.innerHTML = '';
             sentenceTextDisplay.innerHTML = '';
-            structuredTokenDisplay.innerHTML = ''; // Clear new display
-            
             sentenceSection.style.display = 'none';
             verbalUnitsSection.style.display = 'none';
             sentenceDisplaySection.style.display = 'none';
-            structuredDisplaySection.style.display = 'none'; // Hide new display
             statusMessages.innerHTML = '';
         }
 
@@ -217,30 +185,41 @@
                 displayError('No file selected.');
                 return;
             }
+
             displayStatus(`Loading ${file.name}...`);
             const parser = new CEXParser();
             parser.loadFromFile(file)
                 .then(p => {
                     displayStatus('CEX data loaded! Processing...');
+                    
                     const sentencesStr = p.getDelimitedData("sentences");
                     const verbalUnitsStr = p.getDelimitedData("verbal_units");
                     const tokensStr = p.getDelimitedData("tokens");
 
                     if (!sentencesStr || !verbalUnitsStr || !tokensStr) {
-                        displayError('Required data blocks (sentences, verbal_units, tokens) missing.');
+                        displayError('One or more required data blocks (sentences, verbal_units, tokens) are missing or empty in the CEX file.');
                         return;
                     }
 
                     const sentenceLines = sentencesStr.trim().split('\n');
                     parsedSentences = sentenceLines.length > 1 ? sentenceLines.slice(1) 
-                        .map(line => ({ id: line.split('|')[0], sequence: line.split('|')[1], connector: line.split('|')[2] }))
+                        .map(line => {
+                            const parts = line.split('|');
+                            return { id: parts[0], sequence: parts[1], connector: parts[2] };
+                        })
                         .filter(s => s.id && s.id.trim() !== "") : [];
 
                     const verbalUnitLines = verbalUnitsStr.trim().split('\n');
                     parsedVerbalUnits = verbalUnitLines.length > 1 ? verbalUnitLines.slice(1)
                         .map(line => {
                             const parts = line.split('|');
-                            return { vuid: parts[0], syntactic_type: parts[1], semantic_type: parts[2], depth: parts[3], sentence: parts[4] };
+                            return { 
+                                vuid: parts[0], 
+                                syntactic_type: parts[1], 
+                                semantic_type: parts[2], 
+                                depth: parts[3], 
+                                sentence: parts[4] 
+                            };
                         })
                         .filter(vu => vu.vuid && vu.vuid.trim() !== "" && vu.sentence && vu.sentence.trim() !== "") : [];
 
@@ -249,26 +228,37 @@
                         .map(line => {
                             const parts = line.split('|');
                             return {
-                                urn: parts[0], reference: parts[1], tokentype: parts[2], text: parts[3],
-                                verbalunit: parts[4], node1: parts[5], node1relation: (parts[6] || "").trim(),
-                                node2: parts[7], node2relation: parts[8]
+                                urn: parts[0],
+                                reference: parts[1], 
+                                tokentype: parts[2],
+                                text: parts[3],
+                                verbalunit: parts[4],
+                                node1: parts[5],
+                                node1relation: (parts[6] || "").trim(), // Ensure node1relation is trimmed
+                                node2: parts[7],
+                                node2relation: parts[8]
                             };
                         })
                         .filter(t => t.urn && t.urn.trim() !== "" && t.verbalunit && t.verbalunit.trim() !== "") : [];
                     
                     if (parsedVerbalUnits.length === 0) {
-                        displayError(`No valid verbal units data. ${verbalUnitLines.length <=1 && verbalUnitsStr.trim() !== "" ? 'Block seems empty or header-only.' : ''}`);
+                        let errorMsg = 'No valid verbal units data found after excluding header. Cannot proceed.';
+                        if (verbalUnitLines.length <=1 && verbalUnitsStr.trim() !== "") {
+                            errorMsg = 'Verbal units data seems to only contain a header or is empty.';
+                        }
+                        displayError(errorMsg);
                         return;
                     }
-                    if (parsedSentences.length === 0 && sentenceLines.length > 1) {
-                        displayStatus('Warning: No valid sentence data found (sentences block present but empty/header-only).');
+                     if (parsedSentences.length === 0 && sentenceLines.length > 1) {
+                        displayStatus('Warning: No valid sentence data found after excluding header, though a "sentences" block was present.');
                     }
+
                     populateSentenceSelector();
                     sentenceSection.style.display = 'block';
-                    displayStatus(`Processed ${file.name}. Select a sentence.`);
+                    displayStatus(`Successfully processed ${file.name}. Select a sentence.`);
                 })
                 .catch(error => {
-                    displayError(`File load/parse error: ${error.message}`);
+                    displayError(`Failed to load or parse CEX file: ${error.message}`);
                     console.error('Detailed error:', error);
                 });
         }
@@ -282,52 +272,37 @@
             displayableSentenceIds.sort((a, b) => {
                 const numA = parseInt(a.match(/\d+$/)?.[0] || a);
                 const numB = parseInt(b.match(/\d+$/)?.[0] || b);
-                return (!isNaN(numA) && !isNaN(numB)) ? numA - numB : a.localeCompare(b);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b);
             });
 
             if (displayableSentenceIds.length === 0) {
-                sentenceSelector.innerHTML = '<option value="">-- No sentences with VUs --</option>';
-                let infoMsg = 'No sentences with verbal units. ';
-                if (parsedSentences.length > 0 && parsedVerbalUnits.length > 0) infoMsg += 'No overlap between "sentences" and "verbal_units" references.';
-                else if (parsedVerbalUnits.length > 0 && parsedSentences.length === 0) infoMsg += '"sentences" block empty/missing.';
-                displayStatus(`Info: ${infoMsg}`);
+                sentenceSelector.innerHTML = '<option value="">-- No sentences with verbal units --</option>';
+                 if (parsedSentences.length > 0 && parsedVerbalUnits.length > 0) {
+                    displayStatus('Info: While sentences and verbal units were loaded, no sentences from the "sentences" block are referenced in the "verbal_units" block, or vice-versa after filtering for valid data.');
+                 } else if (parsedVerbalUnits.length > 0 && parsedSentences.length === 0) {
+                     displayStatus('Info: Verbal units loaded, but the "sentences" block is missing, empty, or only contains a header. Cannot populate sentence menu.');
+                 } else {
+                    displayError('No sentences found that have associated verbal units. Check data integrity.');
+                 }
                 return;
             }
-            displayableSentenceIds.forEach(id => sentenceSelector.add(new Option(id, id)));
-        }
-
-        function _createTokenSpan(token, VUsInSentence) {
-            const tokenSpan = document.createElement('span');
-            tokenSpan.classList.add('token-span');
-            tokenSpan.textContent = token.text;
-            
-            const parentVU = VUsInSentence.find(vu => vu.vuid === token.verbalunit);
-            if (parentVU && parentVU.displayColor) {
-                tokenSpan.style.backgroundColor = parentVU.displayColor;
-            } else {
-                tokenSpan.style.backgroundColor = '#eee'; 
-                tokenSpan.style.color = '#555';
-            }
-
-            if (token.node1relation === 'unit verb') tokenSpan.classList.add('token-unit-verb');
-            if (token.node1relation === 'subject') tokenSpan.classList.add('token-subject');
-            if (token.node1relation === 'direct object' || token.node1relation === 'predicate') {
-                tokenSpan.classList.add('token-direct-object-predicate');
-            }
-            return tokenSpan;
+            displayableSentenceIds.forEach(sentenceId => {
+                const option = document.createElement('option');
+                option.value = sentenceId;
+                option.textContent = sentenceId;
+                sentenceSelector.appendChild(option);
+            });
         }
 
         function handleSentenceSelection(event) {
             const selectedSentenceId = event.target.value;
             verbalUnitsDisplayUl.innerHTML = ''; 
             sentenceTextDisplay.innerHTML = '';
-            structuredTokenDisplay.innerHTML = ''; // Clear new display
-            
             verbalUnitsSection.style.display = 'none';
             sentenceDisplaySection.style.display = 'none';
-            structuredDisplaySection.style.display = 'none'; // Hide new display
-            
             let localColorIndex = 0; 
+
 
             if (!selectedSentenceId) {
                 selectedSentenceDisplay.textContent = '';
@@ -338,91 +313,83 @@
             
             const VUsInSentence = parsedVerbalUnits
                 .filter(vu => vu.sentence === selectedSentenceId)
-                .map(vu_orig => ({ ...vu_orig, displayColor: PASTEL_COLORS[localColorIndex++ % PASTEL_COLORS.length] }));
+                .map(vu_orig => {
+                    const color = PASTEL_COLORS[localColorIndex % PASTEL_COLORS.length];
+                    localColorIndex++;
+                    return { ...vu_orig, displayColor: color }; 
+                });
 
             if (VUsInSentence.length === 0) {
-                verbalUnitsDisplayUl.innerHTML = '<li>No verbal units for this sentence.</li>';
+                verbalUnitsDisplayUl.innerHTML = '<li>No verbal units found for this sentence.</li>';
                 verbalUnitsSection.style.display = 'block';
-                sentenceTextDisplay.innerHTML = '<em>No VUs, so no tokens.</em>';
                 sentenceDisplaySection.style.display = 'block';
-                structuredTokenDisplay.innerHTML = '<em>No VUs, so no tokens.</em>';
-                structuredDisplaySection.style.display = 'block';
+                sentenceTextDisplay.innerHTML = '<em>No verbal units (and thus no tokens) for this sentence.</em>';
                 return;
             }
 
             VUsInSentence.forEach(vu => {
-                const tokenCount = parsedTokens.filter(t => t.verbalunit === vu.vuid).length;
+                const tokensInThisVU = parsedTokens.filter(token => token.verbalunit === vu.vuid);
+                const tokenCount = tokensInThisVU.length;
+
                 const li = document.createElement('li');
                 const syntacticSpan = document.createElement('span');
-                syntacticSpan.className = 'syntactic-type';
+                syntacticSpan.classList.add('syntactic-type');
                 syntacticSpan.style.backgroundColor = vu.displayColor; 
                 syntacticSpan.textContent = vu.syntactic_type;
+
                 li.appendChild(syntacticSpan);
                 li.innerHTML += ` (${vu.semantic_type || 'N/A'}) - Tokens: ${tokenCount}`;
                 verbalUnitsDisplayUl.appendChild(li);
             });
             verbalUnitsSection.style.display = 'block';
 
-            const vuIdsInSentence = new Set(VUsInSentence.map(vu => vu.vuid));
-            let sentenceTokens = parsedTokens
-                .filter(token => vuIdsInSentence.has(token.verbalunit))
-                .sort((a, b) => {
-                    const refA = parseInt(a.reference, 10); const refB = parseInt(b.reference, 10);
-                    if (isNaN(refA) && isNaN(refB)) return 0; if (isNaN(refA)) return 1; if (isNaN(refB)) return -1;
-                    return refA - refB;
-                });
+            const vuIdsInSentence = VUsInSentence.map(vu => vu.vuid);
+            let sentenceTokens = parsedTokens.filter(token => vuIdsInSentence.includes(token.verbalunit));
 
-            // Populate Continuous Sentence Display
+            sentenceTokens.sort((a, b) => {
+                const refA = parseInt(a.reference, 10);
+                const refB = parseInt(b.reference, 10);
+                if (isNaN(refA) && isNaN(refB)) return 0;
+                if (isNaN(refA)) return 1; 
+                if (isNaN(refB)) return -1;
+                return refA - refB;
+            });
+
             if (sentenceTokens.length > 0) {
                 sentenceTokens.forEach(token => {
-                    const tokenSpan = _createTokenSpan(token, VUsInSentence);
+                    const tokenSpan = document.createElement('span');
+                    tokenSpan.classList.add('token-span');
+                    tokenSpan.textContent = token.text; 
+                    
+                    const parentVU = VUsInSentence.find(vu => vu.vuid === token.verbalunit);
+                    if (parentVU && parentVU.displayColor) {
+                        tokenSpan.style.backgroundColor = parentVU.displayColor;
+                    } else {
+                        tokenSpan.style.backgroundColor = '#eee'; 
+                        tokenSpan.style.color = '#555';
+                    }
+
+                    // Apply decorations based on node1relation
+                    if (token.node1relation === 'unit verb') {
+                        tokenSpan.classList.add('token-unit-verb');
+                    }
+                    if (token.node1relation === 'subject') {
+                        tokenSpan.classList.add('token-subject');
+                    }
+                    if (token.node1relation === 'direct object' || token.node1relation === 'predicate') {
+                        tokenSpan.classList.add('token-direct-object-predicate');
+                    }
+                    
                     sentenceTextDisplay.appendChild(tokenSpan);
-                    sentenceTextDisplay.appendChild(document.createTextNode(' ')); // Add space
+                    // Add a space after each token for better visual separation if not handled by margin/padding
+                    // sentenceTextDisplay.appendChild(document.createTextNode(' ')); 
                 });
-                // Remove last trailing space
-                if (sentenceTextDisplay.lastChild && sentenceTextDisplay.lastChild.nodeType === Node.TEXT_NODE) {
-                    sentenceTextDisplay.removeChild(sentenceTextDisplay.lastChild);
-                }
             } else {
-                sentenceTextDisplay.innerHTML = '<em>No tokens for VUs in this sentence.</em>';
+                sentenceTextDisplay.innerHTML = '<em>No tokens found associated with the verbal units of this sentence.</em>';
             }
             sentenceDisplaySection.style.display = 'block';
-
-            // Populate Structured Token Display
-            if (sentenceTokens.length > 0) {
-                let currentVUID = null;
-                let currentLineDiv = null;
-                const indentationUnitPx = 20; // 20px per indentation level
-
-                sentenceTokens.forEach(token => {
-                    if (token.verbalunit !== currentVUID) {
-                        currentVUID = token.verbalunit;
-                        currentLineDiv = document.createElement('div');
-                        currentLineDiv.className = 'structured-token-line';
-
-                        const parentVU = VUsInSentence.find(vu => vu.vuid === currentVUID);
-                        if (parentVU) {
-                            const depth = parseInt(parentVU.depth, 10) || 1; 
-                            const indentLevel = Math.max(0, depth - 1); 
-                            currentLineDiv.style.paddingLeft = `${indentLevel * indentationUnitPx}px`;
-                        }
-                        structuredTokenDisplay.appendChild(currentLineDiv);
-                    }
-
-                    const tokenSpan = _createTokenSpan(token, VUsInSentence);
-                    
-                    if (currentLineDiv) {
-                        if (currentLineDiv.hasChildNodes()) { // Add space if not the first token on the line
-                            currentLineDiv.appendChild(document.createTextNode(' '));
-                        }
-                        currentLineDiv.appendChild(tokenSpan);
-                    }
-                });
-            } else {
-                structuredTokenDisplay.innerHTML = '<em>No tokens for VUs in this sentence.</em>';
-            }
-            structuredDisplaySection.style.display = 'block';
         }
+
     </script>
 </body>
 </html>

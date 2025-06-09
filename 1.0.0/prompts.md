@@ -89,3 +89,7 @@ Nice! Now I'd like to edit a couple of labels. 1) Please change the title of the
 ---
 
 Fantastic! Could you write a very brief user guide to using the app?
+
+---
+
+Let's make one tweak to the menu for choosing a sentence to view. Please include only sentences for which at least one verbal unit has been defined.

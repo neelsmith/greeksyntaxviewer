@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Syntax Viewer</title> <!-- Changed Title -->
+    <script src="https://cdn.jsdelivr.net/gh/neelsmith/cex-lib/cex.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 50px; 
+        }
+        h1, h3 {
+            color: #555;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"], select {
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 400px;
+        }
+        #verbalUnitInfo ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #verbalUnitInfo li {
+            padding: 6px 0;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        details {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff; 
+        }
+        summary {
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #f8f9fa; 
+            border-bottom: 1px solid #ddd; 
+            border-radius: 4px 4px 0 0; 
+            outline: none; 
+        }
+        details[open] summary {
+             border-bottom: 1px solid #ddd;
+        }
+        details > div { 
+            padding: 10px;
+        }
+        #keyDetails ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #keyDetails li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .key-example {
+            display: inline-block;
+            padding: 2px 8px;
+            margin-right: 10px;
+            border: 1px dashed #ccc; 
+            min-width: 60px; 
+            text-align: center;
+        }
+        .key-example-box { border: 1.5px solid #333; }
+        .key-example-subject {
+            text-decoration: underline;
+            text-decoration-color: #333;
+            text-decoration-thickness: 1.5px;
+            text-underline-offset: 3px;
+        }
+        .key-example-direct-object {
+            text-decoration: overline underline;
+            text-decoration-color: #333;
+            text-decoration-thickness: 1.5px;
+            text-underline-offset: 3px;
+        }
+        #sentenceTextDisplay { 
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        #reconstructedSentenceText {
+            word-wrap: break-word;
+            line-height: 1.8;
+        }
+        .token-span, .vu-syntactic-type-highlight {
+            padding: 2px 5px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 1px;
+            margin-bottom: 2px;
+            color: #212529;
+            box-sizing: border-box;
+        }
+        .vu-info-text { margin-left: 5px; margin-right: 8px; }
+        .structured-text-line { margin-bottom: 4px; line-height: 1.7; }
+        #mermaidGraphDetails .mermaid { text-align: center; }
+        #mermaidGraphDetails .mermaid svg { max-width: 100%; height: auto; }
+        .error { color: red; font-weight: bold; }
+        .info { color: green; }
+        .warn { color: orange; font-style: italic; }
+        .token-decoration-unit-verb { border: 1.5px solid #333; }
+        .token-decoration-subject {
+            text-decoration: underline;
+            text-decoration-color: #333; 
+            text-decoration-thickness: 1.5px;
+            text-underline-offset: 3px; 
+        }
+        .token-decoration-direct-object {
+            text-decoration: overline underline;
+            text-decoration-color: #333;
+            text-decoration-thickness: 1.5px;
+            text-underline-offset: 3px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Greek Syntax Viewer</h1> <!-- Changed H1 -->
+
+        <label for="fileInput">Choose a CEX file:</label>
+        <input type="file" id="fileInput" accept=".cex">
+
+        <div id="statusMessages"></div>
+
+        <div>
+            <label for="sentenceSelector">Select Sentence:</label>
+            <select id="sentenceSelector" disabled>
+                <option value="">-- Load a CEX file first --</option>
+            </select>
+        </div>
+
+        <div id="verbalUnitInfo" style="display: none;">
+            <h3>Verbal Units</h3>
+            <ul id="verbalUnitList"></ul>
+        </div>
+
+        <details id="keyDetails" style="display: none;">
+            <summary><h3>Key</h3></summary>
+            <div>
+                <ul>
+                    <li><span class="key-example key-example-box">Verb</span> = Verb forms (related to 'unit verb')</li>
+                    <li><span class="key-example key-example-subject">Subject</span> = Subject of verb</li>
+                    <li><span class="key-example key-example-direct-object">Object</span> = Direct object</li>
+                </ul>
+            </div>
+        </details>
+
+        <div id="sentenceTextDisplay" style="display: none;">
+            <p id="reconstructedSentenceText"></p>
+        </div>
+
+        <details id="structuredTextDetails" style="display: none;">
+            <summary><h3>Text indented by level of subordination</h3></summary> <!-- Changed Summary -->
+            <div id="structuredTextContent"></div>
+        </details>
+
+        <details id="mermaidGraphDetails" style="display: none;">
+            <summary><h3>Syntax Graph</h3></summary> <!-- Changed Summary -->
+            <div class="mermaid" id="mermaidGraph"></div>
+        </details>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: false });
+
+        const fileInput = document.getElementById('fileInput');
+        const sentenceSelector = document.getElementById('sentenceSelector');
+        const verbalUnitInfoDiv = document.getElementById('verbalUnitInfo');
+        const verbalUnitList = document.getElementById('verbalUnitList');
+        const statusMessages = document.getElementById('statusMessages');
+        const keyDetails = document.getElementById('keyDetails');
+        const sentenceTextDisplayDiv = document.getElementById('sentenceTextDisplay');
+        const reconstructedSentenceTextP = document.getElementById('reconstructedSentenceText');
+        const structuredTextDetails = document.getElementById('structuredTextDetails');
+        const structuredTextContentDiv = document.getElementById('structuredTextContent');
+        const mermaidGraphDetails = document.getElementById('mermaidGraphDetails');
+        const mermaidGraphDiv = document.getElementById('mermaidGraph');
+
+        let allSentencesData = [];
+        let allVerbalUnitsData = [];
+        let allTokensData = [];
+        const vuColorMap = new Map();
+        let verbalUnitsMap = new Map();
+        let globalTokenNodeTextMap = new Map();
+
+        function generatePastelColorHsl() {
+            const hue = Math.floor(Math.random() * 360);
+            const saturation = Math.floor(Math.random() * 30) + 50; 
+            const lightness = Math.floor(Math.random() * 15) + 80;  
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        function parseDelimitedText(textBlock, delimiter = '|') {
+            if (!textBlock || typeof textBlock !== 'string') return [];
+            const lines = textBlock.trim().split('\n');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim());
+                if (values.length === headers.length) {
+                    const entry = {};
+                    headers.forEach((header, index) => { entry[header] = values[index]; });
+                    data.push(entry);
+                } else {
+                    console.warn(`Skipping malformed line: ${lines[i]}`);
+                }
+            }
+            return data;
+        }
+
+        function escapeMermaidLabel(str) {
+             if (typeof str !== 'string') str = String(str);
+            return str.replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
+        function styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap) {
+            tokenSpan.textContent = token.text || '';
+            tokenSpan.className = 'token-span'; 
+            if (token.verbalunit && currentSentenceVuColorMap.has(token.verbalunit)) {
+                tokenSpan.style.backgroundColor = currentSentenceVuColorMap.get(token.verbalunit);
+            } else {
+                tokenSpan.style.backgroundColor = '#f0f0f0';
+            }
+            const relation = token.node1relation ? token.node1relation.trim() : '';
+            if (relation === 'unit verb') {
+                tokenSpan.classList.add('token-decoration-unit-verb');
+            } else if (relation === 'subject') {
+                tokenSpan.classList.add('token-decoration-subject');
+            } else if (relation === 'direct object') {
+                tokenSpan.classList.add('token-decoration-direct-object');
+            }
+        }
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            statusMessages.innerHTML = '<p class="info">Loading file...</p>';
+            sentenceSelector.innerHTML = '<option value="">-- Loading sentences --</option>';
+            sentenceSelector.disabled = true;
+            
+            verbalUnitInfoDiv.style.display = 'none';
+            keyDetails.style.display = 'none'; 
+            sentenceTextDisplayDiv.style.display = 'none';
+            structuredTextDetails.style.display = 'none'; 
+            mermaidGraphDetails.style.display = 'none';   
+
+            reconstructedSentenceTextP.innerHTML = '';
+            structuredTextContentDiv.innerHTML = '';
+            mermaidGraphDiv.innerHTML = 'Loading graph...'; 
+            verbalUnitList.innerHTML = '';
+            vuColorMap.clear(); 
+            verbalUnitsMap.clear();
+            globalTokenNodeTextMap.clear();
+
+            allSentencesData = [];
+            allVerbalUnitsData = [];
+            allTokensData = [];
+
+            const parser = new CEXParser();
+            parser.loadFromFile(file)
+                .then(p => {
+                    statusMessages.innerHTML = '<p class="info">CEX data loaded successfully!</p>';
+                    const sentencesStr = p.getDelimitedData("sentences");
+                    const verbalUnitsStr = p.getDelimitedData("verbal_units");
+                    const tokensStr = p.getDelimitedData("tokens");
+
+                    if (!sentencesStr) {
+                         statusMessages.innerHTML += '<p class="error">"sentences" block not found in CEX file.</p>';
+                    } else {
+                        allSentencesData = parseDelimitedText(sentencesStr);
+                    }
+                    
+                    if (verbalUnitsStr) {
+                        allVerbalUnitsData = parseDelimitedText(verbalUnitsStr);
+                        allVerbalUnitsData.forEach(vu => { if (vu.vuid) verbalUnitsMap.set(vu.vuid, vu); });
+                    } else {
+                         statusMessages.innerHTML += '<p class="warn">"verbal_units" block not found.</p>';
+                    }
+
+                    if (tokensStr) {
+                        allTokensData = parseDelimitedText(tokensStr);
+                        allTokensData.forEach(token => {
+                            if (token.reference && token.text) {
+                                globalTokenNodeTextMap.set(String(token.reference), token.text);
+                            }
+                        });
+                    } else {
+                        statusMessages.innerHTML += '<p class="warn">"tokens" block not found.</p>';
+                    }
+                    
+                    populateSentenceSelector();
+                })
+                .catch(error => {
+                    console.error('Failed to load CEX file:', error);
+                    statusMessages.innerHTML = `<p class="error">Failed to load or parse CEX file: ${error.message}</p>`;
+                    populateSentenceSelector(); 
+                });
+        });
+
+        function populateSentenceSelector() {
+            sentenceSelector.innerHTML = '<option value="">-- Select a sentence --</option>';
+            if (allSentencesData.length === 0) {
+                 sentenceSelector.innerHTML = '<option value="">-- No sentences available --</option>';
+                 sentenceSelector.disabled = true; 
+                 return;
+            }
+            allSentencesData.forEach(sentenceObj => {
+                if (sentenceObj.sentence) { 
+                    const option = document.createElement('option');
+                    option.value = sentenceObj.sentence;
+                    option.textContent = sentenceObj.sentence;
+                    sentenceSelector.appendChild(option);
+                } else {
+                    console.warn("Found sentence object without a 'sentence' property:", sentenceObj);
+                }
+            });
+            sentenceSelector.disabled = false;
+        }
+
+        sentenceSelector.addEventListener('change', async function(event) { 
+            const selectedSentenceId = event.target.value;
+            
+            verbalUnitList.innerHTML = ''; 
+            reconstructedSentenceTextP.innerHTML = ''; 
+            structuredTextContentDiv.innerHTML = '';
+            mermaidGraphDiv.innerHTML = 'Loading graph...'; 
+
+            if (!selectedSentenceId) {
+                verbalUnitInfoDiv.style.display = 'none';
+                keyDetails.style.display = 'none'; 
+                sentenceTextDisplayDiv.style.display = 'none';
+                structuredTextDetails.style.display = 'none';
+                mermaidGraphDetails.style.display = 'none';
+                keyDetails.removeAttribute('open');
+                structuredTextDetails.removeAttribute('open');
+                mermaidGraphDetails.removeAttribute('open');
+                return;
+            }
+            
+            verbalUnitInfoDiv.style.display = 'block';
+            keyDetails.style.display = 'block'; 
+            sentenceTextDisplayDiv.style.display = 'block';
+            structuredTextDetails.style.display = 'block';
+            mermaidGraphDetails.style.display = 'block';
+
+            const verbalUnitsInSentence = allVerbalUnitsData.filter(vu => vu.sentence === selectedSentenceId);
+            const currentSentenceVuColorMap = new Map(); 
+            verbalUnitsInSentence.forEach(vu => {
+                if (vu.vuid) {
+                    if (!vuColorMap.has(vu.vuid)) {
+                        vuColorMap.set(vu.vuid, generatePastelColorHsl());
+                    }
+                    currentSentenceVuColorMap.set(vu.vuid, vuColorMap.get(vu.vuid));
+                }
+            });
+
+            if (allVerbalUnitsData.length === 0 && verbalUnitsInSentence.length === 0) {
+                verbalUnitList.innerHTML = "<li>No verbal unit data loaded from file.</li>";
+            } else if (verbalUnitsInSentence.length === 0) {
+                verbalUnitList.innerHTML = `<li>No verbal units found for sentence ${selectedSentenceId}.</li>`;
+            } else {
+                verbalUnitsInSentence.forEach(vu => {
+                    const li = document.createElement('li');
+                    const syntacticTypeSpan = document.createElement('span');
+                    syntacticTypeSpan.textContent = vu.syntactic_type || 'N/A';
+                    syntacticTypeSpan.className = 'vu-syntactic-type-highlight';
+                    syntacticTypeSpan.style.backgroundColor = (vu.vuid && currentSentenceVuColorMap.get(vu.vuid)) || '#eee';
+                    li.appendChild(syntacticTypeSpan);
+                    const semanticTypeSpan = document.createElement('span');
+                    semanticTypeSpan.className = 'vu-info-text';
+                    semanticTypeSpan.textContent = `(${vu.semantic_type || 'N/A'})`;
+                    li.appendChild(semanticTypeSpan);
+                    const additionalInfoSpan = document.createElement('span');
+                    additionalInfoSpan.className = 'vu-info-text';
+                    let additionalText = "";
+                    if (vu.vuid) additionalText += `ID: ${vu.vuid}`;
+                    if (allTokensData.length > 0) {
+                        const tokenCount = allTokensData.filter(token => token.verbalunit === vu.vuid).length;
+                        additionalText += `${vu.vuid ? ', ' : ''}Tokens: ${tokenCount}`;
+                    } else if (allTokensData.length === 0 && verbalUnitsInSentence.length > 0){
+                        additionalText += `${vu.vuid ? ', ' : ''}Tokens: N/A (no token data)`;
+                    }
+                    if(additionalText) additionalInfoSpan.textContent = `- ${additionalText}`;
+                    li.appendChild(additionalInfoSpan);
+                    verbalUnitList.appendChild(li);
+                });
+            }
+
+            let tokensForTextDisplays = []; 
+            let tokensForGraphSource = []; 
+
+            if (allTokensData.length > 0) {
+                const vuidSetForSentence = new Set(
+                    verbalUnitsInSentence.map(vu => vu.vuid).filter(vuid => vuid)
+                );
+                if (vuidSetForSentence.size > 0) { 
+                    const sentenceTokens = allTokensData
+                        .filter(token => token.verbalunit && vuidSetForSentence.has(token.verbalunit))
+                        .sort((a, b) => parseFloat(a.reference) - parseFloat(b.reference));
+                    tokensForTextDisplays = [...sentenceTokens]; 
+                    tokensForGraphSource = [...sentenceTokens];  
+                }
+            }
+
+            if (tokensForTextDisplays.length > 0) {
+                reconstructedSentenceTextP.innerHTML = ''; 
+                tokensForTextDisplays.forEach((token, index) => {
+                    const tokenSpan = document.createElement('span');
+                    styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap);
+                    reconstructedSentenceTextP.appendChild(tokenSpan);
+                    if (index < tokensForTextDisplays.length - 1) {
+                        reconstructedSentenceTextP.appendChild(document.createTextNode(' '));
+                    }
+                });
+            } else {
+                reconstructedSentenceTextP.textContent = (allTokensData.length === 0 && allVerbalUnitsData.length === 0) ? "No token or verbal unit data loaded." : "No tokens found for this sentence's verbal units.";
+            }
+
+            if (tokensForTextDisplays.length > 0) {
+                structuredTextContentDiv.innerHTML = ''; 
+                let currentLineElement = null;
+                let previousVerbalUnitId = null; 
+                const indentUnit = '1.5em'; 
+                tokensForTextDisplays.forEach(token => {
+                    const currentVerbalUnitId = token.verbalunit;
+                    const tokenVU = verbalUnitsMap.get(currentVerbalUnitId);
+                    if (currentVerbalUnitId !== previousVerbalUnitId) {
+                        currentLineElement = document.createElement('div');
+                        currentLineElement.className = 'structured-text-line';
+                        let depth = 1;
+                        if (tokenVU && tokenVU.depth) {
+                            const parsedDepth = parseInt(tokenVU.depth, 10);
+                            if (!isNaN(parsedDepth) && parsedDepth > 0) depth = parsedDepth;
+                        }
+                        currentLineElement.style.paddingLeft = `calc(${depth - 1} * ${indentUnit})`;
+                        structuredTextContentDiv.appendChild(currentLineElement);
+                        previousVerbalUnitId = currentVerbalUnitId;
+                    }
+                    if (currentLineElement) {
+                        if (currentLineElement.childNodes.length > 0) {
+                            currentLineElement.appendChild(document.createTextNode(' '));
+                        }
+                        const tokenSpan = document.createElement('span');
+                        styleTokenSpan(tokenSpan, token, currentSentenceVuColorMap); 
+                        currentLineElement.appendChild(tokenSpan);
+                    }
+                });
+            } else {
+                 structuredTextContentDiv.textContent = (allTokensData.length === 0 && allVerbalUnitsData.length === 0) ? "No token or verbal unit data loaded." : "No tokens found to structure for this sentence.";
+            }
+
+            if (tokensForGraphSource.length > 0) {
+                mermaidGraphDiv.innerHTML = ''; 
+                let mermaidDefinition = "graph BT;\n";
+                const nodesInGraph = new Set();
+                tokensForGraphSource.forEach(token => {
+                    if (token.reference) nodesInGraph.add(String(token.reference));
+                    if (token.node1) nodesInGraph.add(String(token.node1));
+                    if (token.node2) nodesInGraph.add(String(token.node2));
+                });
+                nodesInGraph.forEach(nodeId => {
+                    const label = globalTokenNodeTextMap.get(nodeId) || `Node ${nodeId}`;
+                    mermaidDefinition += `    ${nodeId}["${escapeMermaidLabel(label)}"];\n`;
+                });
+                tokensForGraphSource.forEach(token => {
+                    const sourceRef = String(token.reference);
+                    if (token.node1 && token.node1relation) {
+                        const targetNode1 = String(token.node1);
+                        mermaidDefinition += `    ${sourceRef} -- "${escapeMermaidLabel(token.node1relation)}" --> ${targetNode1};\n`;
+                    }
+                    if (token.node2 && token.node2relation) {
+                        const targetNode2 = String(token.node2);
+                        mermaidDefinition += `    ${sourceRef} -- "${escapeMermaidLabel(token.node2relation)}" --> ${targetNode2};\n`;
+                    }
+                });
+                
+                try {
+                    const graphId = 'mermaidGeneratedGraph-' + selectedSentenceId.replace(/[^a-zA-Z0-9]/g, "_");
+                    const { svg } = await mermaid.render(graphId, mermaidDefinition);
+                    mermaidGraphDiv.innerHTML = svg;
+                } catch (error) {
+                    console.error("Mermaid rendering error:", error);
+                    mermaidGraphDiv.innerHTML = `<p class="error">Error rendering graph. Check console.</p><pre>${escapeMermaidLabel(mermaidDefinition)}</pre>`;
+                }
+            } else {
+                mermaidGraphDiv.innerHTML = (allTokensData.length === 0 && allVerbalUnitsData.length === 0) ? "<p>No token or verbal unit data loaded to generate graph.</p>" : "<p>No tokens found for this sentence to generate graph.</p>";
+            }
+        });
+    </script>
+</body>
+</html>
