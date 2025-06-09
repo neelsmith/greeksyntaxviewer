@@ -1,3 +1,7 @@
+I have a web app written in HTML + Javascript that does some pretty fancy displays of synatactic annotations on Greek texts. One part of the Web page creates a Mermaid diagram of the data the user uploads. I would like to add an option for the user to download the Memaid graph as a PNG file.  Here is the webapp:
+
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,9 +89,9 @@
             <div class="graph-options">
                 <label for="graphDirectionSelector">Graph Layout:</label>
                 <select id="graphDirectionSelector">
-                    <option value="BT">Bottom to Top</option>
-                    <option value="LR">Left to Right</option>
                     <option value="TB">Top to Bottom</option>
+                    <option value="LR">Left to Right</option>
+                    <option value="BT">Bottom to Top</option>
                 </select>
             </div>
             <details>
@@ -294,3 +298,7 @@
     </script>
 </body>
 </html>
+                    
+```
+
+Could add that feature and display the resulting HTML page?
