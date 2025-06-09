@@ -71,3 +71,11 @@ Gorgeous! That's all the key functionality! Now tweaking the display:  I would l
 ---
 
 Perfect. Let's make the "Key" section foldable, too.
+
+---
+
+I'd like to give the user the option of displaying ther mermaid syntax diagram either left to right or top to bottom. Could you implement that?
+
+--
+
+Excellent! Let's make the default option "Top to Bottom"
