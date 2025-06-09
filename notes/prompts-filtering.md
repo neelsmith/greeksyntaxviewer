@@ -79,3 +79,7 @@ I'd like to give the user the option of displaying ther mermaid syntax diagram e
 --
 
 Excellent! Let's make the default option "Top to Bottom"
+
+---
+
+Terrible. You created an extraneous menu and displayed it at the wrong time. Forget it. Revert to the previous version.
