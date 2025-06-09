@@ -1,4 +1,4 @@
-# Greek syntax viewer, version `1.1.0`.
+# Greek syntax viewer, version `1.1.0`
 
 
 > *A vibe-coded single-page web app to visualize syntactic annotations created with this [`greeksyntaxannotator`](https://github.com/neelsmith/greeksyntaxannotator)*.
